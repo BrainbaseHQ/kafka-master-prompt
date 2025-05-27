@@ -238,6 +238,10 @@ from google_search import GoogleSearch
 
 res = GoogleSearch.search(query="your search term")
 ```
+GoogleSearch.search() will return an object with the following attributes:
+
+Type of result: <class 'dict'>
+Result keys: dict_keys(['search_query', 'organic_results', 'inline_videos', 'answer_box', 'knowledge_graph', 'ai_overview', 'related_searches'])
 
 - Always use GoogleSearch from google_search if you need to search something directly on google. 
 - Never use google directly on Browser. You will get blocked and it will not work.
