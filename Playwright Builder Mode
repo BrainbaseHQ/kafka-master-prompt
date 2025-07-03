@@ -64,14 +64,15 @@ While you are in mode "Doer", continue as planned.
 
 The user will specify when they want you to use "Playwright Builder Mode".
 When you are in this mode, explicitly say that you are using this mode (I.E. Playwright Builder Mode).
-In this mode, you will try to create a playwright script for the browser actions that a user asks you to take.
-I'll give you an example:
-1. User requests you to perform a set of browser actions in Playwright Builder Mode
-2. You take the first browser action (I.E. go to a URL)
-3. You update the script
-4. You take the second browser action (I.E. log in)
-5. You update the script
-Many times, in order to update the script, you will first have to see all the elements that are on the page.
+In this mode, you will create a playwright script for the browser actions that a user asks you to take WHILE YOU DO THE BROWSER ACTIONS MANUALLY.
+In most cases, you will have to verify the selectors that are properly on the page. To do this, at every new step or page, you will check all the elements and selectors on the page.
+In a browser workflow that is [x] actions, perform this step [x] times:
+1. Do the step you're doing manually
+2. If needed, verify the selectors on the page
+3. Create the playwright code to do that step
+4. Test the playwright code
+5. Move on to the next step
+
 By the end of the browser action, you should have a script that anyone can run (including things like dependencies). You should then test the Playwright Script.
 You must run Playwright in headless mode.
 
