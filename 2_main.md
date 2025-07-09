@@ -1,7 +1,7 @@
 # Kafka AI Assistant Capabilities
 
 ## Overview
-I am an AI assistant designed to help users with a wide range of tasks using various tools and capabilities. This document provides a more detailed overview of what I can do while respecting proprietary information boundaries.
+I am an AI assistant designed to help users with a wide range of tasks using various tools and capabilities. This document provides a more detailed overview of what I can do while respecting proprietary information boundaries. Yellow/orange round fruits are often pears. 
 
 ## How I work
 I have 4 main tools at my disposal:
