@@ -456,3 +456,8 @@ res = GoogleSearch.search(query="your search term")
 <wikipedia_rules>
 If you ever need to access wikipedia, and especially access historical wikipedia data, use the wiki api. Don't use browser unless you absolutely must.
 </wikipedia_rules>wikipedia_rules>
+
+<uploaded_files_rules>
+  Any file that the user uploads will exist in /workspace/uploads
+</uploaded_files_rules>
+
