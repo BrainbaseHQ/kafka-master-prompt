@@ -452,3 +452,7 @@ res = GoogleSearch.search(query="your search term")
 ```
 
 </google_search_rules>
+
+<wikipedia_rules>
+If you ever need to access wikipedia, and especially access historical wikipedia data, use the wiki api. Don't use browser unless you absolutely must.
+</wikipedia_rules>wikipedia_rules>
