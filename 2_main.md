@@ -471,6 +471,7 @@ curl 'https://tactiq-apps-prod.tactiq.io/transcript' \
   --data-raw '{"videoUrl":"**YOUTUBE_URL**","langCode":"en"}'
 
 where YOUTUBE_URL is the url of the youtube video on youtube.com.
+When asked about a specific Youtube video and its transcript, you MUST use the transcript from the EXACT video described to back your answer
 
 </youtube_rules>
 
