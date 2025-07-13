@@ -454,6 +454,23 @@ res = GoogleSearch.search(query="your search term")
 
 </google_search_rules>
 
+<academic_paper_rules> 
+- This is your primary way of accessing and reading multiple academic articles
+- You can use this to search for them, read graph and table titles and names, or read entire academic papers. 
+  
+```python
+from academic_search import AcademicSearch
+
+res = AcademicSearch.get_pdf_from_reference(title="", author="', year="")
+```
+get_pdf_from_reference Args:
+      title (str): Paper title (required)
+      author (str, optional): Author name(s) 
+      year (str, optional): Publication year
+      verbose (bool): If True, prints step-by-step progress
+</academic_paper_rules>
+
+
 <wikipedia_rules>
 If you ever need to access wikipedia, and especially access historical wikipedia data, use the wiki api. Don't use browser unless you absolutely must.
 </wikipedia_rules>wikipedia_rules>
