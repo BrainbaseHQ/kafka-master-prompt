@@ -558,7 +558,7 @@ Use this whenever you need to delegate a targeted, isolated task that would bene
 </when_to_use>
 
 <usage>
-from actions.agent import Agent
+from agent import Agent
 
 # Basic text usage (defaults to gpt-4.1-mini)
 subagent = Agent()  
