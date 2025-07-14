@@ -550,29 +550,78 @@ def get_summary(self) -> Dict:
 
 <subagent_rules>
 <when_to_use>
-Use this whenever you need to delegate a targeted, isolated task that would benefit from a fresh context without the burden of previous conversation history. Ideal for complex analysis, structured data extraction, specialized reasoning, or tasks requiring focused attention.
+Use this whenever you need to delegate a targeted, isolated task that would benefit from a fresh context without the burden of previous conversation history. Ideal for:
+- Complex analysis or structured data extraction
+- Specialized reasoning or focused attention tasks
+- Visual analysis tasks (GPT-4.1 mini supports image inputs)
+- Tasks requiring image understanding combined with text analysis
 </when_to_use>
-<import>
 
-```python
-from agent import Agent
-```
-
-</import>
 <usage>
-subagent = Agent(model="gpt-4o-mini")  # or preferred model
-response = subagent.run("Your instruction or question here")
-</usage>
-<functions>
-def run(self, instruction: str, extraction_model: Optional[Type[BaseModel]] = None, 
-        system_prompt: Optional[str] = None, temperature: float = 0.1, 
-        max_tokens: Optional[int] = None, **completion_kwargs) -> Union[str, BaseModel]:
-"""Execute the subagent with given instruction. Returns string response or structured Pydantic model if extraction_model provided."""
+from actions.agent import Agent
 
-def run_with_json_schema(self, instruction: str, json_schema: Dict[str, Any],
-schema_name: str = "response_schema", system_prompt: Optional[str] = None,
-temperature: float = 0.1, max_tokens: Optional[int] = None,
-\*\*completion_kwargs) -> Dict[str, Any]:
-"""Execute the subagent with JSON schema for structured output. Returns parsed JSON response."""
-</functions>
+# Basic text usage (defaults to gpt-4.1-mini)
+subagent = Agent()  
+response = subagent.run("Your instruction or question here")
+
+# With the full GPT-4.1 model (higher cost, more capability)
+subagent = Agent(model="gpt-4.1")
+
+# With image analysis (both models support image input)
+response = subagent.run([
+    {"type": "text", "text": "Analyze this image and describe what you see"},
+    {"type": "image_url", "image_url": {"url": "workspace/uploads/image.jpg"}}
+])
+
+# Multiple images with text
+response = subagent.run([
+    {"type": "text", "text": "Compare these two images"},
+    {"type": "image_url", "image_url": {"url": "workspace/image1.png"}},
+    {"type": "image_url", "image_url": {"url": "workspace/image2.png"}}
+])
+
+# Structured extraction with images
+from pydantic import BaseModel, Field
+
+class ImageAnalysis(BaseModel):
+    objects: List[str] = Field(description="Objects detected in the image")
+    scene_description: str = Field(description="Overall scene description")
+    dominant_colors: List[str] = Field(description="Main colors in the image")
+
+analysis = subagent.run(
+    instruction=[
+        {"type": "text", "text": "Analyze this image"},
+        {"type": "image_url", "image_url": {"url": "workspace/photo.jpg"}}
+    ],
+    extraction_model=ImageAnalysis
+)
+</usage>
+
+<methods>
+def run(self, instruction: Union[str, List[Dict[str, Any]]], extraction_model: Optional[Type[BaseModel]] = None, system_prompt: Optional[str] = None, temperature: float = 0.1, max_tokens: Optional[int] = None, **completion_kwargs) -> Union[str, BaseModel]:
+    """Execute the subagent with text or multimodal input. Returns string response or structured Pydantic model if extraction_model provided."""
+
+def run_with_json_schema(self, instruction: Union[str, List[Dict[str, Any]]], json_schema: Dict[str, Any], schema_name: str = "response_schema", system_prompt: Optional[str] = None, temperature: float = 0.1, max_tokens: Optional[int] = None, **completion_kwargs) -> Dict[str, Any]:
+    """Execute the subagent with JSON schema for structured output. Supports both text and multimodal input. Returns parsed JSON response."""
+</methods>
+
+<model_specs>
+Available GPT-4.1 models:
+- gpt-4.1-mini: Balanced for intelligence, speed, and cost ($0.40/$1.60 per 1M tokens input/output)
+- gpt-4.1: Higher capability model ($2.00 per 1M tokens input, see pricing docs for output)
+
+Both models support:
+- Text and image inputs, text outputs
+- 1,047,576 token context window
+- 32,768 max output tokens
+- Function calling and structured outputs
+</model_specs>
+
+<notes>
+- The agent automatically handles local image files in the workspace folder
+- Images are base64 encoded for transmission
+- Supports common image formats: jpg, jpeg, png, gif, webp, bmp
+- For web URLs, pass them directly; for local files, use relative or absolute paths
+- Both GPT-4.1 models have native multimodal capabilities
+</notes>
 </subagent_rules>
