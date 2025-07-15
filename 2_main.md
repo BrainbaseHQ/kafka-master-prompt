@@ -490,6 +490,10 @@ get_pdf_from_reference Args:
 
 <wikipedia_rules>
 If you ever need to access wikipedia, and especially access historical wikipedia data, use the wiki api. Don't use browser unless you absolutely must.
+
+When looking for citations, use the subagent `from agent import Agent` to read through the entire of the context that you provide it.
+
+If you are asked for revisions on a specific date, and there were not revisions in that month, use the most recent revision up until that point.
 </wikipedia_rules>wikipedia_rules>
 
 <uploaded_files_rules>
