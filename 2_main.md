@@ -681,3 +681,165 @@ Both models support:
 - **For any unsupported image format errors**: Convert the image to a supported format first
 </notes>
 </subagent_rules>
+
+<academic_search>
+To do academic search you can use the following class:
+
+```python
+import os
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+class AcademicSearch:
+    @staticmethod
+    def get_pdf_from_reference(title: str, author: str = None, year: str = None, verbose: bool = False):
+        """
+        Combined function that takes a paper reference and returns the direct PDF URL from Sci-Hub.
+        
+        Args:
+            title (str): Paper title (required)
+            author (str, optional): Author name(s) 
+            year (str, optional): Publication year
+            verbose (bool): If True, prints step-by-step progress
+            
+        Returns:
+            dict: Contains 'success', 'doi', 'pdf_url', 'error' keys
+            
+        Example:
+            # With all parameters
+            result = AcademicSearch.get_pdf_from_reference(
+                "Health effects of trans fatty acids",
+                "ASCHERIO A., WILLET W.C.", 
+                "1997"
+            )
+            
+            # With title only
+            result = AcademicSearch.get_pdf_from_reference(
+                "Health effects of trans fatty acids"
+            )
+            
+            # With title and year only
+            result = AcademicSearch.get_pdf_from_reference(
+                "Health effects of trans fatty acids",
+                year="1997"
+            )
+        """
+        
+        def query_crossref_doi(title, author=None, year=None):
+            """Query Crossref API to find DOI"""
+            try:
+                # Clean up the title
+                title_clean = title.replace('-', ' ').strip()
+                
+                # Build the bibliographic query
+                bibliographic_query = title_clean
+                if year:
+                    bibliographic_query += f" {year}"
+                
+                # Build the URL with proper encoding
+                base_url = "https://api.crossref.org/works"
+                params = {
+                    'query.bibliographic': bibliographic_query,
+                    'rows': 5
+                }
+                
+                # Add author parameter if provided
+                if author:
+                    author_clean = author.split(',')[0].strip()  # Take first author
+                    params['query.author'] = author_clean
+                
+                response = requests.get(base_url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    items = data.get('message', {}).get('items', [])
+                    
+                    if items:
+                        first_result = items[0]
+                        doi = first_result.get('DOI', None)
+                        return doi
+                    else:
+                        return None
+                else:
+                    return None
+            except Exception:
+                return None
+
+        def get_scihub_pdf_url(doi):
+            """Get PDF URL from Sci-Hub given a DOI"""
+            scihub_url = f"https://sci-hub.ru/{doi}"
+            
+            try:
+                response = requests.get(scihub_url, timeout=10)
+                response.raise_for_status()
+            except requests.RequestException:
+                return None
+
+            soup = BeautifulSoup(response.text, "html.parser")
+            
+            embed_tag = soup.select_one("#article embed")
+            if embed_tag and embed_tag.has_attr("src"):
+                pdf_url = embed_tag["src"]
+                
+                if pdf_url.startswith("//"):
+                    pdf_url = "https:" + pdf_url
+                elif pdf_url.startswith("/"):
+                    pdf_url = "https://sci-hub.ru" + pdf_url
+                
+                return pdf_url
+            else:
+                return None
+
+        # Build query description for verbose output
+        query_parts = [f"'{title[:50]}...'" if len(title) > 50 else f"'{title}'"]
+        if author:
+            query_parts.append(f"by {author}")
+        if year:
+            query_parts.append(f"({year})")
+        query_desc = " ".join(query_parts)
+
+        # Step 1: Get DOI from Crossref
+        if verbose:
+            print(f"Looking up DOI for {query_desc}")
+        
+        doi = query_crossref_doi(title, author, year)
+        
+        if not doi:
+            return {
+                'success': False,
+                'doi': None,
+                'pdf_url': None,
+                'error': 'DOI not found in Crossref'
+            }
+        
+        if verbose:
+            print(f"Found DOI: {doi}")
+        
+        # Step 2: Get PDF URL from Sci-Hub
+        if verbose:
+            print(f"Looking up PDF URL on Sci-Hub...")
+        
+        pdf_url = get_scihub_pdf_url(doi)
+        
+        if not pdf_url:
+            return {
+                'success': False,
+                'doi': doi,
+                'pdf_url': None,
+                'error': 'PDF not found on Sci-Hub'
+            }
+        
+        if verbose:
+            print(f"Found PDF URL: {pdf_url}")
+        
+        return {
+            'success': True,
+            'doi': doi,
+            'pdf_url': pdf_url,
+            'error': None
+        }
+```
+</academic_search>
