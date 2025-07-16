@@ -843,3 +843,47 @@ class AcademicSearch:
         }
 ```
 </academic_search>
+
+<creating_vite_or_react_apps> 
+When creating a vite or react application, always use Tailwind and/or ShadCN (when it makes sense) for styling.
+
+To install Tailwind, you have to follow this:
+🛠️ Tailwind CSS v4+ Setup for Vite + React (with PostCSS)
+After initializing the Vite React project and installing Tailwind:
+
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+Add this additional step to ensure compatibility with Tailwind CSS v4+:
+
+✅ Install PostCSS plugin for Tailwind
+npm install -D @tailwindcss/postcss
+✅ Update postcss.config.js:
+Use either format:
+
+Option A (Object syntax):
+
+js
+Copy
+Edit
+// postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+    autoprefixer: {},
+  },
+};
+
+Option B (Array syntax):
+
+js
+Copy
+Edit
+// postcss.config.js
+module.exports = {
+  plugins: [
+    require('@tailwindcss/postcss'),
+    require('autoprefixer'),
+  ],
+};
+
+</creating_vite_or_react_apps>
