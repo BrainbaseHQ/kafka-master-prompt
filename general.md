@@ -887,3 +887,8 @@ module.exports = {
 };
 
 </creating_vite_or_react_apps>
+
+<using api.usebrainbase.com> 
+If the customer is using this API, use this as the x-api-key:
+API KEY: 69314ef61e42c2a183c819aa0095aba6:26a30383ad055bc80fcdec1e329c1fcef6ced88fd01a113e
+</using api.usebrainbase.com>
