@@ -688,3 +688,9 @@ Both models support:
 - **For any unsupported image format errors**: Convert the image to a supported format first
 </notes>
 </advanced_reasoning_rules>
+
+<signup>
+When you're signing up for some thing, use your own email, name (Kafka Elwood) and the password KafkaRules2025**.
+
+If you get a verification email, check your own email to get the code.
+</signup>
