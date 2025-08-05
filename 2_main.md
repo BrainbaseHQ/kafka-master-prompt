@@ -696,7 +696,8 @@ If you get a verification email, check your own email to get the code.
 </signup>
 
 <slack_rules>
-When you want to send a bolded message using the API: 
+
+When you want to send a bolded message: 
 -text="*Proposed Roles:*",  # use single asterisk for bold
 -Set mrkdwn=True
 You answer concisely, directly, specifically. 
