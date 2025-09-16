@@ -336,7 +336,9 @@ Result keys: dict_keys(['search_query', 'organic_results', 'inline_videos', 'ans
 
 ## Web Content Extraction & Crawling
 
-**CRITICAL**: For ALL web content extraction, ALWAYS use the `WebCrawler` class from the `crawler` module. NEVER use requests, urllib, curl, wget, or BeautifulSoup directly (unless as a critical state fallback if the WebCrawler class has issues)
+**CRITICAL**: For ALL web content extraction, ALWAYS use the `WebCrawler` class from the `crawler` module. NEVER use requests, urllib, curl, wget, or BeautifulSoup directly.
+
+**STATUS**: WebCrawler has been fully fixed and is production-ready. Browser installation and permission issues have been resolved. All methods return consistent error dictionaries and handle failures gracefully.
 
 ### Basic Web Crawling
 
@@ -360,6 +362,24 @@ results = await WebCrawler.crawl_multiple(
     parallel=True,          # Parallel processing
     max_concurrent=5        # Max concurrent requests
 )
+
+# Alternative method name (both work identically)
+results = await WebCrawler.crawl_batch(urls, parallel=True)
+```
+
+### Simple HTTP Crawling (Lightweight Alternative)
+
+```python
+# Use for static sites when browser automation isn't needed
+# This is faster and uses less resources - good for basic content extraction
+result = await WebCrawler.crawl_simple("https://example.com")
+if result['success']:
+    content = result['markdown']    # Clean markdown content
+    title = result['title']         # Page title
+else:
+    error = result['error']
+    # Fallback to full browser crawl if needed
+    result = await WebCrawler.crawl("https://example.com")
 ```
 
 ### Search and Crawl (Combined Workflow)
@@ -523,18 +543,45 @@ else:
     # Handle error or try alternative approach
 ```
 
+### Choosing the Right Crawling Method
+
+```python
+# Decision tree for method selection:
+
+# 1. For static content sites (news, blogs, documentation)
+result = await WebCrawler.crawl_simple("https://example.com")
+
+# 2. If crawl_simple fails, try full browser crawl
+if not result['success']:
+    result = await WebCrawler.crawl("https://example.com")
+
+# 3. For known dynamic/JS-heavy sites (SPAs, social media)
+result = await WebCrawler.crawl_dynamic("https://app.example.com")
+
+# 4. For multiple URLs (research, aggregation)
+results = await WebCrawler.crawl_multiple(urls, parallel=True)
+
+# 5. For specific data extraction
+result = await WebCrawler.extract_structured(url, css_rules={...})
+```
+
 ## Important WebCrawler Rules:
 
 1. **NEVER use requests, urllib, curl, or BeautifulSoup** - Always use WebCrawler
 2. **NEVER parse HTML manually** - WebCrawler returns clean markdown
 3. **ALWAYS use WebCrawler for web content** - It handles JavaScript, authentication, dynamic content
-4. **Prefer parallel crawling** for multiple URLs - It's much faster
-5. **Use search_and_crawl** for research tasks - Combines search + crawl efficiently
-6. **Handle errors gracefully** - Check result['success'] before using content
-7. **Use appropriate extraction method**:
+4. **Choose the right crawling method**:
+   - Use `crawl_simple()` for static sites (faster, lightweight)
+   - Use `crawl()` for JavaScript-heavy or dynamic sites
+   - Use `crawl_multiple()` or `crawl_batch()` for parallel processing
+5. **Prefer parallel crawling** for multiple URLs - It's much faster
+6. **Use search_and_crawl** for research tasks - Combines search + crawl efficiently
+7. **Handle errors gracefully** - Check result['success'] before using content
+8. **Use appropriate extraction method**:
+   - `crawl_simple()` for basic static content
    - CSS selectors for structured data
    - LLM extraction for complex/varied structures
-   - Basic crawl for general content
+   - Full browser crawl for dynamic/JS-heavy sites
 
 </web_crawling_rules>
 
