@@ -737,7 +737,7 @@ This short guide shows how to discover, configure, and run **App actions** using
 ## 1) Initialize the factory and load an app
 
 ```python
-from your_sdk import AppFactory  # adjust import to your SDK
+from integrations import AppFactory  # adjust import to your SDK
 
 factory = AppFactory()
 google_drive = factory.app("google_drive")
@@ -814,7 +814,7 @@ print(result)  # Often includes fileId, webViewLink, etc.
 ## 6) Minimal end-to-end example (Google Drive → Upload File)
 
 ```python
-from your_sdk import AppFactory
+from integrations import AppFactory
 
 factory = AppFactory()
 google_drive = factory.app("google_drive")
