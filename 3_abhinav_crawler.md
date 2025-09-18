@@ -309,6 +309,8 @@ Result keys: dict_keys(['search_query', 'organic_results', 'inline_videos', 'ans
 
 **CRITICAL**: For ALL web content extraction, ALWAYS use the `WebCrawler` class from the `crawler` module. NEVER use requests, urllib, curl, wget, or BeautifulSoup directly.
 
+**NOTE**: The WebCrawler class now uses a REST API service for all browser automation. This provides better reliability, session management, and performance. The API handles all browser interactions transparently.
+
 ### Basic Web Crawling
 
 ```python
@@ -319,6 +321,12 @@ result = await WebCrawler.crawl("https://example.com")
 print(result['markdown'])      # Clean markdown content
 print(result['links'])         # {'internal': [...], 'external': [...]}
 print(result['media'])         # {'images': [...], 'videos': [...], 'audios': [...]}
+
+# Use session for stateful crawling (maintains cookies, auth)
+result = await WebCrawler.crawl(
+    "https://example.com",
+    use_session=True  # Automatically creates and manages session
+)
 ```
 
 ### Crawling Multiple URLs
@@ -391,7 +399,7 @@ result = await WebCrawler.crawl(
 ### Page Interactions (Forms, Clicks, etc.)
 
 ```python
-# Interact with page elements
+# Interact with page elements (automatically uses session)
 interactions = [
     {'type': 'fill', 'selector': '#search', 'value': 'search term'},
     {'type': 'click', 'selector': '.search-button'},
@@ -402,6 +410,7 @@ interactions = [
 result = await WebCrawler.crawl_with_interaction(
     "https://example.com",
     interactions=interactions
+    # session_id is automatically created if not provided
 )
 ```
 
@@ -538,17 +547,16 @@ result = await WebCrawler.extract_structured(url, css_rules={...})
 
 1. **NEVER use requests, urllib, curl, or BeautifulSoup** - Always use WebCrawler
 2. **NEVER parse HTML manually** - WebCrawler returns clean markdown
-3. **ALWAYS use WebCrawler for web content** - It handles JavaScript, authentication, dynamic content
+3. **ALWAYS use WebCrawler for web content** - It handles JavaScript, authentication, dynamic content via API service
 4. **Choose the right crawling method**:
-   - Use `crawl_simple()` for static sites (faster, lightweight)
-   - Use `crawl()` for JavaScript-heavy or dynamic sites
+   - Use `crawl_simple()` for static sites (faster, lightweight, direct HTTP)
+   - Use `crawl()` for JavaScript-heavy or dynamic sites (uses API service)
    - Use `crawl_multiple()` or `crawl_batch()` for parallel processing
-5. **Prefer parallel crawling** for multiple URLs - It's much faster
-6. **Use search_and_crawl** for research tasks - Combines search + crawl efficiently
-7. **Handle errors gracefully** - Check result['success'] before using content
-8. **Use appropriate extraction method**:
-   - `crawl_simple()` for basic static content
-   - CSS selectors for structured data
+5. **Use sessions for stateful operations** - Sessions maintain cookies, authentication across requests
+6. **Prefer parallel crawling** for multiple URLs - It's much faster
+7. **Use search_and_crawl** for research tasks - Combines search + crawl efficiently
+8. **Handle errors gracefully** - Check result['success'] before using content
+9. **API will fallback to simple HTTP** - If the API service is unavailable, it automatically falls back to simple HTTP crawling
    - LLM extraction for complex/varied structures
    - Full browser crawl for dynamic/JS-heavy sites
 
