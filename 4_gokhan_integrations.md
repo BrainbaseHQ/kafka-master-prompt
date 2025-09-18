@@ -750,8 +750,50 @@ google_drive = factory.app("google_drive")
 ## 2) Discover available actions
 
 ```python
-actions = google_drive.list_actions()
-print(actions)  # e.g. ['google_drive-upload-file', 'google_drive-download-file', ...]
+print(google_drive)
+```
+
+```bash
+
+📱 GOOGLE DRIVE Actions
+================================
+Found 30 actions
+
+📝 NAME                            🔧 SLUG                                       📋 DESCRIPTION                                               
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Upload File                       google_drive-upload-file                     Upload a file to Google Drive. [See the documentation](ht...
+Update Shared Drive               google_drive-update-shared-drive             Update an existing shared drive. [See the documentation](...
+Update File                       google_drive-update-file                     Update a file's metadata and/or content. [See the documen...
+Search for Shared Drives          google_drive-search-shared-drives            Search for shared drives with query options. [See the doc...
+Resolve Comment                   google_drive-resolve-comment                 Mark a comment as resolved. [See the documentation](https...
+Resolve Access Proposals          google_drive-resolve-access-proposal         Accept or deny a request for access to a file or folder i...
+Reply to Comment                  google_drive-reply-to-comment                Add a reply to an existing comment. [See the documentatio...
+Move File                         google_drive-move-file                       Move a file from one folder to another. [See the document...
+Move File to Trash                google_drive-move-file-to-trash              Move a file or folder to trash. [See the documentation](h...
+List Files                        google_drive-list-files                      List files from a specific folder. [See the documentation...
+List Comments                     google_drive-list-comments                   List all comments on a file. [See the documentation](http...
+List Access Proposals             google_drive-list-access-proposals           List access proposals for a file or folder. [See the docu...
+Get Shared Drive                  google_drive-get-shared-drive                Get metadata for one or all shared drives. [See the docum...
+Get Folder ID for a Path          google_drive-get-folder-id-for-path          Retrieve a folderId for a path. [See the documentation](h...
+Get File By ID                    google_drive-get-file-by-id                  Get info on a specific file. [See the documentation](http...
+Find Spreadsheets                 google_drive-find-spreadsheets               Search for a specific spreadsheet by name. [See the docum...
+Find Forms                        google_drive-find-forms                      List Google Form documents or search for a Form by name. ...
+Find Folder                       google_drive-find-folder                     Search for a specific folder by name. [See the documentat...
+Find File                         google_drive-find-file                       Search for a specific file by name. [See the documentatio...
+Download File                     google_drive-download-file                   Download a file. [See the documentation](https://develope...
+Delete Shared Drive               google_drive-delete-shared-drive             Delete a shared drive without any content. [See the docum...
+Delete File                       google_drive-delete-file                     Permanently delete a file or folder without moving it to ...
+Delete Comment                    google_drive-delete-comment                  Delete a specific comment (Requires ownership or permissi...
+Create Shared Drive               google_drive-create-shared-drive             Create a new shared drive. [See the documentation](https:...
+Create Folder                     google_drive-create-folder                   Create a new empty folder. [See the documentation](https:...
+Create New File From Text         google_drive-create-file-from-text           Create a new file from plain text. [See the documentation...
+Create New File From Template     google_drive-create-file-from-template       Create a new Google Docs file from a template. Optionally...
+Copy File                         google_drive-copy-file                       Create a copy of the specified file. [See the documentati...
+Share File or Folder              google_drive-add-file-sharing-preference     Add a [sharing permission](https://support.google.com/dri...
+Add Comment                       google_drive-add-comment                     Add an unanchored comment to a Google Doc (general feedba...
+
+💡 Use app.action('slug') to create an action instance
+💡 Use print(action) to see detailed configuration options
 ```
 
 Pick the action you need:
@@ -762,23 +804,62 @@ upload_file = google_drive.action("google_drive-upload-file")
 
 ---
 
-## 3) Configure required properties
+## 3) Configure the action
 
-You can set properties in one or multiple `configure(...)` calls. Later calls merge/override earlier values.
+Print the action to see what inputs go into it:
 
 ```python
-# Example: choose the drive ("My Drive" or a Shared Drive name)
-upload_file.configure({"drive": "My Drive"})
+print(upload_file)
 ```
 
-### When to use `get_options_for_prop(...)`
+```bash
+🔧 ACTION: google_drive-upload-file
+📱 APP: google_drive
+================================================================================
+📝 Name: Upload File
+📋 Description: Upload a file to Google Drive. [See the documentation](https://developers.google.com/drive/api/v3/manage-uploads) for more information
 
-Only call this for properties that **have remote options** (dynamic lists like folders, drives, etc.).
+⚙️  USER CONFIGURATION PROPERTIES (9 total)
+--------------------------------------------------------------------------------
+🏷️  NAME             📊 TYPE       ❓ REQ  🔄 RELOAD 📋 DESCRIPTION                 
+────────────────────────────────────────────────────────────────────────────────
+drive                string       ✅      ➖        Defaults to `My Drive`. To s...
+parentId             string       ✅      ➖        The folder you want to uploa...
+filePath             string       ✅      ➖        Provide either a file URL or...
+name                 string       ✅      ➖        The name of the new file (e....
+mimeType             string       ✅      ➖        The file's MIME type (e.g., ...
+uploadType           string       ✅      ➖        The type of upload request t...
+                     🎯 Options: Simple upload. Upload the media only, without any metadata., Resumable upload. Upload the file in a resumable fashion, using a series of at least two requests where the first request includes the metadata., Multipart upload. Upload both the media and its metadata, in a single request.
+fileId               string       ✅      ➖        ID of the file to replace. L...
+metadata             object       ✅      ➖        Additional metadata to suppl...
+syncDir              dir          ✅      ➖        No description                
+
+🔐 AUTHENTICATION
+--------------------------------------------------------------------------------
+📱 This action requires google_drive authentication
+🔄 Authentication is handled automatically when you run the action
+💡 If not authenticated, you'll get a link to connect your account
+
+💡 USAGE:
+   action.configure({prop_name: value, ...})
+   action.get_options_for_prop('prop_name')  # For dynamic options
+   action.run()  # Execute after configuration
+
+📖 LEGEND:
+   ❌ Required property    ✅ Optional property
+   🔄 Needs reload        ➖ No reload needed
+   🌐 Remote options       🎯 Static options
+```
+
+Here, you must configure all required properties.
+
+Properties with remote options means that you need to first configure the non-remote option properties preceding it, and then call `get_options_for_prop` so that you see the options for that prop. You should then call configure again with the value for that prop.
 
 ```python
 # If 'parentId' supports remote options (e.g., folder picker), you can fetch suggestions:
 folder_options = upload_file.get_options_for_prop("parentId")  # only if parentId has remote options
 print(folder_options)
+# ... see the options ...
 
 # Then set a specific folder ID:
 upload_file.configure({"parentId": "1oCtb3dqmLMnwe_VtNeVQQuZg5VlpSvoz"})
@@ -837,7 +918,7 @@ upload_file.configure({"parentId": "1oCtb3dqmLMnwe_VtNeVQQuZg5VlpSvoz"})
 upload_file.configure({
     "fileName": "report.pdf",
     "mimeType": "application/pdf",
-    "fileContent": open("report.pdf", "rb").read(),
+    "filePath": "URL TO FILE"
 })
 
 # Execute
@@ -849,20 +930,17 @@ print("Uploaded:", result)
 
 ## FAQs & Tips
 
+- **I have to upload a file, how do I do it?**
+  You can't pass files in bytes or with local paths, you must pass a remote public url to any prop that wants a file.
+
 - **Do I have to configure everything at once?**
   No—call `configure(...)` multiple times; later calls override earlier ones.
 
 - **How do I know required vs optional props?**
-  Check your platform’s action schema or try running once—errors usually specify missing properties.
+  Print the action.
 
 - **When should I use `get_options_for_prop`?**
   Only for props that have **remote options** (e.g., folder pickers). Skip it for plain text/IDs you already know.
-
-- **Common upload gotchas**
-
-  - Ensure `mimeType` matches the file.
-  - Confirm the target `drive` and `parentId` exist and you have access.
-  - Large files may require chunked uploads if the SDK/action supports it.
 
 That’s it! You can apply the same steps to any other app/action: **discover → configure → (optionally fetch remote options) → run**.
 
