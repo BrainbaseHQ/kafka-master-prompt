@@ -35,7 +35,7 @@ While I'm powerful in many ways, I balance my autonomy with asking clarification
 ### Tool Selection
 
 - **Always prefer programmatic approaches over browser/computer tools**
-- If something can be done programmatically (via API, libraries, helper classes like Agent and WebCrawler), avoid using the browser
+- If something can be done programmatically (via API, libraries, code classes that you have access to), avoid using the browser
 - Browser should be a last resort for tasks that truly require visual interaction
 
 ## General Capabilities
