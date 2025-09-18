@@ -945,6 +945,231 @@ If you need to use external integrations (slack, linear, gmail, etc. you have 30
 
 # Integration Guide:
 
-Integration` class. This class provides a complete component-based flow for configuring and executing External actions actions. ## Key Concepts 1. **Components vs Actions**: Use components (configured actions) rather than raw actions 2. **Dynamic Configuration**: Some properties change based on other property values 3. **Authentication Flow**: Handle OAuth via Connect Links automatically 4. **Multi-step Process**: Configuration may require multiple iterations ## Basic Usage Pattern ```python from integrations import Integration # Initialize the integration integration = Integration() # Step 1: Get component definition component = integration.get_component("gmail-send-email") # Step 2: Configure the component config = { "gmail": "gmail", # App authentication prop "to": ["user@example.com"], "subject": "Hello from AI", "body": "This email was sent by an AI assistant!", "bodyType": "plaintext" } result = integration.configure_component(config) # Step 3: Handle configuration result if result["status"] == "success": # Step 4: Run the configured component execution_result = integration.run_configured_component() print("Email sent successfully!") else: # Handle authentication or configuration issues handle_configuration_issues(result) ``` ## Handling Configuration Results The `configure_component()` method returns different statuses that you must handle: ### 1. Authentication Required ```python result = integration.configure_component(config) if result["status"] == "needs_auth": app_slug = result["app_slug"] auth_link = result["auth_link"] print(f"❌ Authentication required for {app_slug}") print(f"🔗 Please visit this link to authenticate: {auth_link}") print(f"💡 After authenticating, I'll continue the configuration automatically.") # In a real scenario, you'd wait for user to authenticate # then call configure_component() again with the same config return ``` ### 2. Dynamic Props Revealed New Requirements ```python if result["status"] == "needs_more_props": new_props = result["new_required_props"] dynamic_props = result["dynamic_props"] print(f"🔄 Configuration revealed {len(new_props)} new required properties:") # Show user what additional props are needed for prop_name in new_props: prop_def = next(p for p in dynamic_props if p["name"] == prop_name) print(f" - {prop_name}: {prop_def.get('description', 'No description')}") # You would then ask user for these values and merge into config # additional_config = get_additional_props_from_user(new_props, dynamic_props) # updated_config = {**config, **additional_config} # result = integration.configure_component(updated_config) ``` ### 3. Validation Errors ```python if result["status"] == "error": error_msg = result["message"] if "valid_options" in result: # This prop has specific valid values valid_options = result["valid_options"] print(f"❌ {error_msg}") print("Valid options:") for option in valid_options: print(f" - {option['label']} (value: {option['value']})") else: print(f"❌ Configuration error: {error_msg}") ``` ## Working with Props That Have Remote Options Some props need to fetch their valid values from APIs: ```python # After getting component definition component = integration.get_component("gmail-find-email") # Check if a prop has remote options configurable_props = component.get("configurable_props", []) for prop in configurable_props: if prop.get("remoteOptions"): prop_name = prop["name"] # Fetch available options options = integration.get_prop_options(prop_name) print(f"Available options for {prop_name}:") for option in options: print(f" - {option['label']} (value: {option['value']})") # Use one of these values in your configuration selected_value = options[0]["value"] # or let user choose config[prop_name] = selected_value ``` ## Complete Example: Sending a Gmail Email ```python def send_gmail_email(to_email, subject, body): """Send an email using Gmail integration.""" integration = Integration() try: # Step 1: Get Gmail send email component print("📧 Setting up Gmail email component...") component = integration.get_component("gmail-send-email") # Step 2: Prepare configuration config = { "gmail": "gmail", # This will trigger auth if needed "to": [to_email], "subject": subject, "body": body, "bodyType": "plaintext" } print("⚙️ Configuring email parameters...") result = integration.configure_component(config) # Step 3: Handle configuration result if result["status"] == "needs_auth": print(f"🔐 Gmail authentication required!") print(f"Please visit: {result['auth_link']}") print("After authenticating, run this function again.") return {"status": "auth_required", "auth_link": result["auth_link"]} elif result["status"] == "error": print(f"❌ Configuration failed: {result['message']}") return {"status": "error", "message": result["message"]} elif result["status"] == "success": print("✅ Configuration successful!") # Step 4: Send the email print("📤 Sending email...") execution_result = integration.run_configured_component() if execution_result.get("error"): print(f"❌ Failed to send email: {execution_result['error']}") return {"status": "error", "message": execution_result["error"]} else: print("✅ Email sent successfully!") return {"status": "success", "result": execution_result} else: print(f"⚠️ Unexpected status: {result['status']}") return {"status": "unknown", "result": result} except Exception as e: print(f"💥 Unexpected error: {str(e)}") return {"status": "exception", "error": str(e)} # Usage result = send_gmail_email("user@example.com", "Hello!", "This is a test email.") ``` ## Complete Example: Finding Gmail Emails ```python def find_gmail_emails(search_query="", max_results=10): """Find emails in Gmail.""" integration = Integration() try: # Step 1: Get Gmail find email component component = integration.get_component("gmail-find-email") # Step 2: Configure with basic props first config = { "gmail": "gmail", "maxResults": max_results, "withTextPayload": True # Make results easier to work with } # Add search query if provided if search_query: config["q"] = search_query result = integration.configure_component(config) # Step 3: Handle authentication if result["status"] == "needs_auth": print(f"🔐 Gmail authentication required: {result['auth_link']}") return {"status": "auth_required", "auth_link": result["auth_link"]} # Step 4: Handle dynamic props (labels, etc.) elif result["status"] == "needs_more_props": print("🔄 Additional configuration options available:") # For example, if labels prop appeared try: label_options = integration.get_prop_options("labels") print(f"Available Gmail labels ({len(label_options)}):") for label in label_options[:5]: # Show first 5 print(f" - {label['label']}") # You could let user select labels here # For now, just continue without labels result = integration.configure_component(config) except Exception as e: print(f"Could not fetch label options: {e}") # Step 5: Execute if configured successfully if result["status"] == "success": print("🔍 Searching emails...") execution_result = integration.run_configured_component() if execution_result.get("error"): return {"status": "error", "message": execution_result["error"]} else: # Process the results emails = execution_result.get("data", []) print(f"✅ Found {len(emails)} emails") return {"status": "success", "emails": emails} except Exception as e: return {"status": "exception", "error": str(e)} ``` ## Best Practices for AI Assistants ### 1. Always Handle Authentication Gracefully ```python def handle_auth_requirement(result): """Helper to handle authentication requirements.""" if result.get("status") == "needs_auth": app_slug = result["app_slug"] auth_link = result["auth_link"] print(f"To use {app_slug}, you need to authenticate first.") print(f"Visit this link: {auth_link}") print("After authenticating, I can continue with your request.") return True return False ``` ### 2. Provide Clear Feedback on Configuration Steps ```python def configure_with_feedback(integration, component_key, config): """Configure component with clear user feedback.""" print(f"🔧 Configuring {component_key}...") # Show what we're configuring print("Configuration:") for key, value in config.items(): if key.endswith("password") or key.endswith("token"): print(f" {key}: [HIDDEN]") else: print(f" {key}: {value}") result = integration.configure_component(config) if result["status"] == "success": print("✅ Configuration successful!") elif result["status"] == "needs_auth": print(f"🔐 Authentication needed for {result['app_slug']}") elif result["status"] == "error": print(f"❌ Configuration failed: {result['message']}") return result ``` ### 3. Handle Complex Multi-Step Configurations ```python def configure_complex_component(integration, component_key, base_config): """Handle components that may require multiple configuration steps.""" config = base_config.copy() max_iterations = 5 # Prevent infinite loops iteration = 0 while iteration < max_iterations: iteration += 1 print(f"🔄 Configuration attempt {iteration}...") result = integration.configure_component(config) if result["status"] == "success": return result elif result["status"] == "needs_auth": print(f"Please authenticate: {result['auth_link']}") return result elif result["status"] == "needs_more_props": # Handle dynamic props automatically where possible new_props = result["new_required_props"] dynamic_props = result["dynamic_props"] print(f"Adding {len(new_props)} new required properties...") # Try to set reasonable defaults for common props for prop_name in new_props: prop_def = next(p for p in dynamic_props if p["name"] == prop_name) # Set defaults for common prop types if prop_def.get("type") == "boolean": config[prop_name] = False elif prop_def.get("type") == "integer": config[prop_name] = prop_def.get("default", 0) elif prop_def.get("remoteOptions"): # Get first available option options = integration.get_prop_options(prop_name) if options: config[prop_name] = options[0]["value"] print(f" {prop_name}: {options[0]['label']}") continue elif result["status"] == "error": print(f"❌ Configuration failed: {result['message']}") return result else: print(f"⚠️ Unknown status: {result['status']}") return result print("❌ Configuration took too many iterations") return {"status": "error", "message": "Configuration complexity exceeded limits"} ``` ## Error Handling Patterns ```python def safe_integration_call(func, *args, **kwargs): """Wrapper for safe integration calls with consistent error handling.""" try: result = func(*args, **kwargs) # Handle common response patterns if isinstance(result, dict): if result.get("error") == "Authentication required": print("🔐 Authentication required - please check your connected accounts") return None elif result.get("status") == "error": print(f"❌ Operation failed: {result.get('message', 'Unknown error')}") return None return result except Exception as e: print(f"💥 Unexpected error: {str(e)}") return None # Usage result = safe_integration_call(integration.configure_component, config) if result: # Process successful result pass ``` ## Integration Class API Reference ### Core Methods #### `get_component(component_key: str, reset_props: bool = False) -> Dict[str, Any]` Get a component definition with its configurable properties. ```python component = integration.get_component("gmail-send-email") configurable_props = component.get("configurable_props", []) ``` #### `configure_component(config_dict: Dict[str, Any]) -> Dict[str, Any]` Configure a component with the provided properties. Returns status and any issues. ```python config = {"gmail": "gmail", "to": ["user@example.com"], "subject": "Test"} result = integration.configure_component(config) ``` #### `run_configured_component() -> Dict[str, Any]` Execute the currently configured component. ```python execution_result = integration.run_configured_component() ``` ### Helper Methods #### `get_prop_options(prop_name: str) -> List[Dict[str, Any]]`Get available options for props with`remoteOptions: true` . ```python options = integration.get_prop_options("labels") for option in options: print(f"{option['label']}: {option['value']}") ``` ####  `set_prop(prop_name: str, prop_value: Any) -> None` Manually set a property value. ```python integration.set_prop("subject", "My Email Subject") ``` #### `reload_props() -> Dict[str, Any]`Reload properties after setting a dynamic prop (for`reloadProps: true` props). ```python reload_result = integration.reload_props() ``` ### Authentication Methods #### `get_connected_accounts() -> Dict[str, Any]` Get all connected accounts for the user. ```python accounts = integration.get_connected_accounts() ``` #### `get_auth_link(app_slug: str) -> Optional[str]` Get authentication link for a specific app. ```python auth_link = integration.get_auth_link("gmail") ``` ## Configuration Status Responses ### Success Response ```python { "status": "success", "configured_props": {...}, "message": "Component configured successfully" } ``` ### Authentication Required Response ```python { "status": "needs_auth", "app_slug": "gmail", "auth_link": "https://connect.something.com/...", "message": "Please authenticate with gmail first" } ``` ### Dynamic Props Response ```python { "status": "needs_more_props", "new_required_props": ["messageId", "labelIds"], "dynamic_props": [...], "message": "Dynamic configuration revealed new required properties" } ``` ### Error Response ```python { "status": "error", "message": "Invalid value for 'maxResults': must be an integer", "valid_options": [...] # If applicable } ``` ## Common Component Examples ### Gmail Components - `gmail-send-email`- Send emails -`gmail-find-email`- Search emails -`gmail-create-draft`- Create email drafts -`gmail-add-label-to-email`- Add labels to emails ### Slack Components -`slack-send-message`- Send messages to channels -`slack-create-channel`- Create new channels -`slack-upload-file`- Upload files ### Google Sheets Components -`google-sheets-add-row`- Add rows to spreadsheets -`google-sheets-update-cell`- Update specific cells -`google-sheets-create-spreadsheet`- Create new spreadsheets ## Troubleshooting ### Common Issues 1. **"No component selected" Error** - Always call`get_component()`before other operations - The component key is stored in the integration instance 2. **Authentication Loops** - Make sure user actually completes the OAuth flow - Check that the correct`app_slug`is being used 3. **Dynamic Props Not Loading** - Some props only appear after setting other props - Use the`needs_more_props`status to handle this 4. **Invalid Configuration Values** - Check`remoteOptions`props for valid values - Use`get_prop_options()`to see available choices ### Debugging Tips`python # Enable detailed logging import json # Show component definition component = integration.get_component("gmail-send-email") print("Component definition:") print(json.dumps(component, indent=2)) # Show current configuration state print("Current configured props:") print(json.dumps(integration.configured_props, indent=2)) # Show available accounts accounts = integration.get_connected_accounts() print("Connected accounts:") print(json.dumps(accounts, indent=2)) ` --- Remember: The Integration class handles the complex Connect API flow for you. Your job as an AI assistant is to: 1. **Gather the right configuration** from the user 2. **Handle authentication gracefully** by providing clear instructions 3. **Manage multi-step configuration** for dynamic components 4. **Provide clear feedback** on what's happening at each step 5. **Process results meaningfully** for the user.
+# Apps & Actions: Step-by-Step Guide (with Google Drive example)
+
+This short guide shows how to discover, configure, and run **App actions** using the `AppFactory`. We’ll use **Google Drive → Upload File** as the running example.
+
+---
+
+## Concepts in 30 seconds
+
+- **AppFactory**: entry point to get an app instance (e.g., `"google_drive"`).
+- **App**: a connector/integration that exposes one or more **actions**.
+- **Action**: a callable unit (e.g., `"google_drive-upload-file"`) with **properties** you configure before running.
+- **Properties**: inputs to the action (strings, numbers, booleans, files, etc.).
+- **Remote options**: some properties have dynamic, server-fetched choices (e.g., folders).
+  Use `get_options_for_prop(...)` **only** for these.
+
+---
+
+## 1) Initialize the factory and load an app
+
+```python
+from integrations import AppFactory  # adjust import to your SDK
+
+factory = AppFactory()
+google_drive = factory.app("google_drive")
+```
+
+> If the app isn’t connected yet, complete OAuth/connection flow in your platform first.
+
+---
+
+## 2) Discover available actions
+
+```python
+print(google_drive)
+```
+
+```bash
+
+📱 GOOGLE DRIVE Actions
+================================
+Found 30 actions
+
+📝 NAME                            🔧 SLUG                                       📋 DESCRIPTION                                               
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Upload File                       google_drive-upload-file                     Upload a file to Google Drive. [See the documentation](ht...
+Update Shared Drive               google_drive-update-shared-drive             Update an existing shared drive. [See the documentation](...
+Update File                       google_drive-update-file                     Update a file's metadata and/or content. [See the documen...
+Search for Shared Drives          google_drive-search-shared-drives            Search for shared drives with query options. [See the doc...
+Resolve Comment                   google_drive-resolve-comment                 Mark a comment as resolved. [See the documentation](https...
+Resolve Access Proposals          google_drive-resolve-access-proposal         Accept or deny a request for access to a file or folder i...
+Reply to Comment                  google_drive-reply-to-comment                Add a reply to an existing comment. [See the documentatio...
+Move File                         google_drive-move-file                       Move a file from one folder to another. [See the document...
+Move File to Trash                google_drive-move-file-to-trash              Move a file or folder to trash. [See the documentation](h...
+List Files                        google_drive-list-files                      List files from a specific folder. [See the documentation...
+List Comments                     google_drive-list-comments                   List all comments on a file. [See the documentation](http...
+List Access Proposals             google_drive-list-access-proposals           List access proposals for a file or folder. [See the docu...
+Get Shared Drive                  google_drive-get-shared-drive                Get metadata for one or all shared drives. [See the docum...
+Get Folder ID for a Path          google_drive-get-folder-id-for-path          Retrieve a folderId for a path. [See the documentation](h...
+Get File By ID                    google_drive-get-file-by-id                  Get info on a specific file. [See the documentation](http...
+Find Spreadsheets                 google_drive-find-spreadsheets               Search for a specific spreadsheet by name. [See the docum...
+Find Forms                        google_drive-find-forms                      List Google Form documents or search for a Form by name. ...
+Find Folder                       google_drive-find-folder                     Search for a specific folder by name. [See the documentat...
+Find File                         google_drive-find-file                       Search for a specific file by name. [See the documentatio...
+Download File                     google_drive-download-file                   Download a file. [See the documentation](https://develope...
+Delete Shared Drive               google_drive-delete-shared-drive             Delete a shared drive without any content. [See the docum...
+Delete File                       google_drive-delete-file                     Permanently delete a file or folder without moving it to ...
+Delete Comment                    google_drive-delete-comment                  Delete a specific comment (Requires ownership or permissi...
+Create Shared Drive               google_drive-create-shared-drive             Create a new shared drive. [See the documentation](https:...
+Create Folder                     google_drive-create-folder                   Create a new empty folder. [See the documentation](https:...
+Create New File From Text         google_drive-create-file-from-text           Create a new file from plain text. [See the documentation...
+Create New File From Template     google_drive-create-file-from-template       Create a new Google Docs file from a template. Optionally...
+Copy File                         google_drive-copy-file                       Create a copy of the specified file. [See the documentati...
+Share File or Folder              google_drive-add-file-sharing-preference     Add a [sharing permission](https://support.google.com/dri...
+Add Comment                       google_drive-add-comment                     Add an unanchored comment to a Google Doc (general feedba...
+
+💡 Use app.action('slug') to create an action instance
+💡 Use print(action) to see detailed configuration options
+```
+
+Pick the action you need:
+
+```python
+upload_file = google_drive.action("google_drive-upload-file")
+```
+
+---
+
+## 3) Configure the action
+
+Print the action to see what inputs go into it:
+
+```python
+print(upload_file)
+```
+
+```bash
+🔧 ACTION: google_drive-upload-file
+📱 APP: google_drive
+================================================================================
+📝 Name: Upload File
+📋 Description: Upload a file to Google Drive. [See the documentation](https://developers.google.com/drive/api/v3/manage-uploads) for more information
+
+⚙️  USER CONFIGURATION PROPERTIES (9 total)
+--------------------------------------------------------------------------------
+🏷️  NAME             📊 TYPE       ❓ REQ  🔄 RELOAD 📋 DESCRIPTION                 
+────────────────────────────────────────────────────────────────────────────────
+drive                string       ✅      ➖        Defaults to `My Drive`. To s...
+parentId             string       ✅      ➖        The folder you want to uploa...
+filePath             string       ✅      ➖        Provide either a file URL or...
+name                 string       ✅      ➖        The name of the new file (e....
+mimeType             string       ✅      ➖        The file's MIME type (e.g., ...
+uploadType           string       ✅      ➖        The type of upload request t...
+                     🎯 Options: Simple upload. Upload the media only, without any metadata., Resumable upload. Upload the file in a resumable fashion, using a series of at least two requests where the first request includes the metadata., Multipart upload. Upload both the media and its metadata, in a single request.
+fileId               string       ✅      ➖        ID of the file to replace. L...
+metadata             object       ✅      ➖        Additional metadata to suppl...
+syncDir              dir          ✅      ➖        No description                
+
+🔐 AUTHENTICATION
+--------------------------------------------------------------------------------
+📱 This action requires google_drive authentication
+🔄 Authentication is handled automatically when you run the action
+💡 If not authenticated, you'll get a link to connect your account
+
+💡 USAGE:
+   action.configure({prop_name: value, ...})
+   action.get_options_for_prop('prop_name')  # For dynamic options
+   action.run()  # Execute after configuration
+
+📖 LEGEND:
+   ❌ Required property    ✅ Optional property
+   🔄 Needs reload        ➖ No reload needed
+   🌐 Remote options       🎯 Static options
+```
+
+Here, you must configure all required properties.
+
+Properties with remote options means that you need to first configure the non-remote option properties preceding it, and then call `get_options_for_prop` so that you see the options for that prop. You should then call configure again with the value for that prop.
+
+```python
+# If 'parentId' supports remote options (e.g., folder picker), you can fetch suggestions:
+folder_options = upload_file.get_options_for_prop("parentId")  # only if parentId has remote options
+print(folder_options)
+# ... see the options ...
+
+# Then set a specific folder ID:
+upload_file.configure({"parentId": "1oCtb3dqmLMnwe_VtNeVQQuZg5VlpSvoz"})
+```
+
+---
+
+## 4) Provide the action payload
+
+For uploads, you typically need a file name, MIME type, and file bytes (or a platform-specific file handle).
+
+```python
+upload_file.configure({
+    "fileName": "report.pdf",
+    "mimeType": "application/pdf",
+    "fileContent": open("report.pdf", "rb").read(),  # bytes
+})
+```
+
+> Property names can vary by SDK/version—inspect your action schema if available.
+
+---
+
+## 5) Run the action and handle the result
+
+```python
+result = upload_file.run()
+print(result)  # Often includes fileId, webViewLink, etc.
+```
+
+---
+
+## 6) Minimal end-to-end example (Google Drive → Upload File)
+
+```python
+from integrations import AppFactory
+
+factory = AppFactory()
+google_drive = factory.app("google_drive")
+
+# Discover and select action
+print(google_drive.list_actions())
+upload_file = google_drive.action("google_drive-upload-file")
+
+# Configure static properties
+upload_file.configure({"drive": "My Drive"})
+
+# (Optional) Only if this prop exposes remote options:
+# options = upload_file.get_options_for_prop("parentId")
+# print(options)
+
+# Set destination folder (use your known folder ID)
+upload_file.configure({"parentId": "1oCtb3dqmLMnwe_VtNeVQQuZg5VlpSvoz"})
+
+# Provide file payload
+upload_file.configure({
+    "fileName": "report.pdf",
+    "mimeType": "application/pdf",
+    "filePath": "URL TO FILE"
+})
+
+# Execute
+result = upload_file.run()
+print("Uploaded:", result)
+```
+
+---
+
+## FAQs & Tips
+
+- **I have to upload a file, how do I do it?**
+  You can't pass files in bytes or with local paths, you must pass a remote public url to any prop that wants a file.
+
+- **Do I have to configure everything at once?**
+  No—call `configure(...)` multiple times; later calls override earlier ones.
+
+- **How do I know required vs optional props?**
+  Print the action.
+
+- **When should I use `get_options_for_prop`?**
+  Only for props that have **remote options** (e.g., folder pickers). Skip it for plain text/IDs you already know.
+
+That’s it! You can apply the same steps to any other app/action: **discover → configure → (optionally fetch remote options) → run**.
 
 </using_external_integrations>
