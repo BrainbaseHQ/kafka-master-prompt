@@ -284,22 +284,72 @@ You are operating in an agent loop, iteratively completing tasks through these s
 
 <google_search_rules>
 
-- Your primary way of searching the web is using Google Search
-- You can do Google Search using the built-in `GoogleSearch` class as:
+- Your primary way of searching the web is using the advanced SearchV2 API
+- You can perform web searches using the built-in `SearchV2` class as:
 
 ```python
-from google_search import GoogleSearch
+from search_v2 import SearchV2
 
-res = GoogleSearch.search(query="your search term")
+# Basic search (automatically chooses between semantic and keyword search)
+res = SearchV2.search(query="your search term")
+
+# Advanced search with content extraction
+res = SearchV2.search_with_content(
+    query="latest AI developments",
+    num_results=5,
+    extract_text=True,
+    extract_highlights=True
+)
+
+# Search for research papers
+res = SearchV2.search_papers("transformer architecture improvements")
+
+# Search recent news
+res = SearchV2.search_news("tech industry updates", days_back=7)
+
+# Search code repositories
+res = SearchV2.search_code("python web scraping", language="python")
 ```
 
-GoogleSearch.search() will return an object with the following attributes:
+SearchV2.search() returns a dictionary with:
 
-Type of result: <class 'dict'>
-Result keys: dict_keys(['search_query', 'organic_results', 'inline_videos', 'answer_box', 'knowledge_graph', 'ai_overview', 'related_searches'])
+- `results`: List of search results with content
+- `request_id`: Unique identifier for the search
+- `resolved_search_type`: The actual search type used (neural/keyword)
 
-- Always use GoogleSearch from google_search if you need to search something directly on google.
-- Never use google directly on Browser. You will get blocked and it will not work.
+Each result contains:
+
+- `url`, `title`, `text`: Basic content
+- `highlights`: Most relevant snippets
+- `summary`: AI-generated summary (if requested)
+- `score`: Relevance score
+- `published_date`, `author`: Metadata
+
+**Search Types:**
+
+- `"auto"` (default): Intelligently chooses between neural and keyword
+- `"neural"`: Semantic search using embeddings
+- `"keyword"`: Traditional keyword-based search
+- `"fast"`: Optimized for speed
+
+**Categories for focused searches:**
+
+- `"research paper"`, `"news"`, `"github"`, `"company"`, `"pdf"`, `"tweet"`, etc.
+
+**FALLBACK**: If SearchV2 fails (returns `success: False`), use the legacy GoogleSearch:
+
+```python
+from search_v2 import SearchV2, GoogleSearch
+
+res = SearchV2.search(query="your search term")
+if res.get("success") is False:
+    # Fallback to legacy search
+    res = GoogleSearch.search(query="your search term")
+```
+
+- Always use SearchV2 as your primary search method
+- Never use search engines directly through Browser - you will get blocked
+- SearchV2 provides better results with semantic understanding and content extraction
 
 </google_search_rules>
 
@@ -360,19 +410,27 @@ else:
 ### Search and Crawl (Combined Workflow)
 
 ```python
-from google_search import GoogleSearch
+from search_v2 import SearchV2
 from crawler import WebCrawler
 
-# Method 1: Using search_and_crawl helper
-results = await WebCrawler.search_and_crawl(
-    query="machine learning trends 2024",
-    max_results=5
+# Method 1: Using SearchV2 with content extraction
+results = SearchV2.search_with_content(
+    query="machine learning trends 2025",
+    num_results=5,
+    extract_highlights=True,
+    extract_text=True
 )
 
-# Method 2: Manual search then crawl
-search_results = GoogleSearch.search("your query")
-urls = [r['link'] for r in search_results['organic_results'][:5]]
+# Method 2: Manual search then crawl for more detailed content
+search_results = SearchV2.search("your query", num_results=5)
+urls = [r['url'] for r in search_results.get('results', [])]
 crawled = await WebCrawler.crawl_multiple(urls)
+
+# Method 3: Using search_and_crawl helper (still works)
+results = await WebCrawler.search_and_crawl(
+    query="machine learning trends 2025",
+    max_results=5
+)
 ```
 
 ### Dynamic Content & JavaScript Sites
@@ -484,27 +542,41 @@ result = await WebCrawler.crawl(
 ```python
 # Research pattern 1: News aggregation
 async def research_news(topic, days_back=1):
-    query = f"{topic} news past {days_back} days"
-    results = await WebCrawler.search_and_crawl(query, max_results=10)
-    return [{'url': r['url'], 'content': r['markdown']} for r in results]
+    # Use SearchV2's specialized news search
+    results = SearchV2.search_news(topic, days_back=days_back, num_results=10)
+    urls = [r['url'] for r in results.get('results', [])]
+    if urls:
+        crawled = await WebCrawler.crawl_multiple(urls)
+        return [{'url': r['url'], 'content': r['markdown']} for r in crawled]
+    return []
 
 # Research pattern 2: Specific site search
 async def search_site(site, query, max_pages=5):
-    search = GoogleSearch.search(f"site:{site} {query}")
-    urls = [r['link'] for r in search['organic_results'][:max_pages]]
+    # Use SearchV2 with domain filtering for better results
+    search = SearchV2.search(
+        query=query,
+        include_domains=[site],
+        num_results=max_pages,
+        type="neural"  # Use semantic search for better understanding
+    )
+    urls = [r['url'] for r in search.get('results', [])][:max_pages]
     return await WebCrawler.crawl_multiple(urls)
 
 # Research pattern 3: Comparison research
 async def compare_sources(topic):
-    sources = [
-        f"site:reuters.com {topic}",
-        f"site:bloomberg.com {topic}",
-        f"site:wsj.com {topic}"
+    # Use SearchV2 batch search for efficiency
+    searches = [
+        {"query": topic, "include_domains": ["reuters.com"], "num_results": 2},
+        {"query": topic, "include_domains": ["bloomberg.com"], "num_results": 2},
+        {"query": topic, "include_domains": ["wsj.com"], "num_results": 2}
     ]
+    batch_results = SearchV2.batch_search(searches)
+
     all_urls = []
-    for source in sources:
-        search = GoogleSearch.search(source)
-        all_urls.extend([r['link'] for r in search['organic_results'][:2]])
+    for search in batch_results.get('searches', []):
+        urls = [r['url'] for r in search.get('results', [])]
+        all_urls.extend(urls)
+
     return await WebCrawler.crawl_multiple(all_urls, parallel=True)
 ```
 
@@ -562,9 +634,12 @@ result = await WebCrawler.extract_structured(url, css_rules={...})
 
 <info_rules>
 
-- Prefer `GoogleSearch` class over browser access to search engine result pages
+- Prefer `SearchV2` class over browser access to search engine result pages
+- Use SearchV2's advanced features: neural search for concepts, keyword search for specific terms
 - Access multiple URLs from search results for comprehensive information or cross-validation
 - Conduct searches step by step: search multiple attributes of single entity separately, process multiple entities one by one
+- Use specialized search methods (search_papers, search_news, search_code) for domain-specific queries
+- If SearchV2 fails, fallback to GoogleSearch.search() for backward compatibility
   </info_rules>
 
 <shell_rules>
@@ -704,7 +779,7 @@ You have access to a browser that you can use to browse the internet. You can us
 <rules>
 - **BROWSER IS LAST RESORT**: Always prefer programmatic approaches (APIs, curl, wget, libraries) over browser
 - Use the browser tool ONLY when programmatic access is impossible or has failed
-- For information gathering: First try GoogleSearch, curl/wget, or APIs. Only use browser if ALL programmatic methods fail
+- For information gathering: First try SearchV2, curl/wget, or APIs. Only use browser if ALL programmatic methods fail
 - You are fully capable of solving CAPTCHAs, so don't ask the user to solve them
 - If you come to an authentication step, if the user hasn't provided you with credentials, ask the user for them. If the user has provided you with credentials, use them and dont ask the user for them again
 - Before using browser, ask yourself: "Can this be done with curl, an API, or a Python library instead?"
@@ -740,18 +815,24 @@ This will then go to another agent who will check your work and give you feedbac
 - when reading links, only use the browser computer AS A LAST RESORT. do everything you can to read the url programatically (curl, wget)
 </rules>
 
-<google_search_rules>
+<web_search_rules>
 
-- Your primary way of searching the web is using Google Search
-- You can do Google Search using the built-in `GoogleSearch` class as:
+- Your primary way of searching the web is using the advanced SearchV2 API
+- You can perform web searches using the built-in `SearchV2` class as:
 
 ```python
-from google_search import GoogleSearch
+from search_v2 import SearchV2
 
-res = GoogleSearch.search(query="your search term")
+# Basic search
+res = SearchV2.search(query="your search term")
+
+# With fallback to legacy search if needed
+if res.get("success") is False:
+    from search_v2 import GoogleSearch
+    res = GoogleSearch.search(query="your search term")
 ```
 
-</google_search_rules>
+</web_search_rules>
 
 <academic_paper_rules>
 
