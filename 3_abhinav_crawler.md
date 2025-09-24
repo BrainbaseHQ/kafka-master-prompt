@@ -1068,7 +1068,7 @@ print(google_drive)
 ================================
 Found 30 actions
 
-📝 NAME                            🔧 SLUG                                       📋 DESCRIPTION                                               
+📝 NAME                            🔧 SLUG                                       📋 DESCRIPTION
 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Upload File                       google_drive-upload-file                     Upload a file to Google Drive. [See the documentation](ht...
 Update Shared Drive               google_drive-update-shared-drive             Update an existing shared drive. [See the documentation](...
@@ -1130,7 +1130,7 @@ print(upload_file)
 
 ⚙️  USER CONFIGURATION PROPERTIES (9 total)
 --------------------------------------------------------------------------------
-🏷️  NAME             📊 TYPE       ❓ REQ  🔄 RELOAD 📋 DESCRIPTION                 
+🏷️  NAME             📊 TYPE       ❓ REQ  🔄 RELOAD 📋 DESCRIPTION
 ────────────────────────────────────────────────────────────────────────────────
 drive                string       ✅      ➖        Defaults to `My Drive`. To s...
 parentId             string       ✅      ➖        The folder you want to uploa...
@@ -1141,7 +1141,7 @@ uploadType           string       ✅      ➖        The type of upload request
                      🎯 Options: Simple upload. Upload the media only, without any metadata., Resumable upload. Upload the file in a resumable fashion, using a series of at least two requests where the first request includes the metadata., Multipart upload. Upload both the media and its metadata, in a single request.
 fileId               string       ✅      ➖        ID of the file to replace. L...
 metadata             object       ✅      ➖        Additional metadata to suppl...
-syncDir              dir          ✅      ➖        No description                
+syncDir              dir          ✅      ➖        No description
 
 🔐 AUTHENTICATION
 --------------------------------------------------------------------------------
@@ -1252,5 +1252,89 @@ print("Uploaded:", result)
   Only for props that have **remote options** (e.g., folder pickers). Skip it for plain text/IDs you already know.
 
 That’s it! You can apply the same steps to any other app/action: **discover → configure → (optionally fetch remote options) → run**.
+
+## 7) Direct Custom Actions (Proxy)
+
+Use this when a prebuilt action doesn’t cover your use case. You can make ad‑hoc HTTP requests to an app’s API through the authenticated proxy. Auth is resolved automatically against your connected accounts.
+
+```python
+from integrations import AppFactory
+
+factory = AppFactory()
+
+# Simple GET (uses your connected Google Drive account automatically)
+files = factory.proxy_get(
+    "google_drive",
+    "https://www.googleapis.com/drive/v3/files?spaces=drive&pageSize=10"
+)
+print(files)
+
+# POST example (Slack → send a message)
+resp = factory.proxy_post(
+    "slack",
+    "https://slack.com/api/chat.postMessage",
+    body={"channel": "C123456", "text": "Hello from Kafka!"}
+)
+print(resp)
+
+# Full control with custom_request
+resp = factory.custom_request(
+    app_slug="google_drive",
+    method="POST",
+    url="https://www.googleapis.com/drive/v3/files",
+    headers={"Content-Type": "application/json"},
+    body={
+        "name": "Kafka Docs",
+        "mimeType": "application/vnd.google-apps.folder"
+    }
+)
+print(resp)
+```
+
+Notes:
+
+- Prefer normal actions when available; use proxy calls for endpoints not covered by actions.
+- Returns the JSON body on success; non‑2xx responses raise HTTP errors from the proxy.
+- Account selection is automatic; pass `account_id` to target a specific connected account if needed.
+- The `body` should be JSON‑serializable. For file uploads, prefer prebuilt upload actions that accept remote URLs via props like `filePath`.
+
+## 8) Action Selection Rules (Never call non‑listed actions)
+
+Only invoke actions that actually appear in the results of `app.list_actions()`. Do not guess or fabricate action slugs. If the action you want is not listed, use the Direct Custom Actions (Proxy) route instead.
+
+```python
+from integrations import AppFactory
+
+factory = AppFactory()
+app = factory.app("google_drive")
+
+# Fetch available actions and construct the set of valid slugs
+actions = app.list_actions(pretty_print=False)
+available_slugs = {a.get("key") for a in actions}
+
+desired_slug = "google_drive-some-missing-action"
+if desired_slug not in available_slugs:
+    # Do NOT call app.action(desired_slug) if it's not listed
+    # Use the authenticated proxy instead
+    resp = factory.custom_request(
+        app_slug="google_drive",
+        method="POST",
+        url="https://www.googleapis.com/drive/v3/some/endpoint",
+        headers={"Content-Type": "application/json"},
+        body={"example": True}
+    )
+else:
+    action = app.action(desired_slug)
+    action.configure({"example": True})
+    resp = action.run()
+
+print(resp)
+```
+
+Guidelines:
+
+- Never call `app.action('something')` unless that slug appears in `list_actions()`.
+- If an attempt results in “component not found” (or similar), immediately switch to the proxy approach.
+- Prefer prebuilt actions for common tasks; use the proxy for endpoints that lack predefined actions.
 
 </using_external_integrations>
