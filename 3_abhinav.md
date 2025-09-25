@@ -1062,6 +1062,30 @@ google_drive = factory.app("google_drive")
 print(google_drive)
 ```
 
+## 2a) Search actions (semantic/match)
+
+Use `search_actions(query, limit=10)` to quickly find the most relevant actions by name, slug, and description. This returns the top matches with a `score` field so you can pick the best one.
+
+```python
+from integrations import AppFactory
+
+factory = AppFactory()
+clickup = factory.app("clickup")
+
+# Find actions related to team membership
+matches = clickup.search_actions("team members", limit=5)
+for m in matches:
+    print(f"{m.get('name')} ({m.get('key')}) score={m.get('score'):.2f}")
+
+# Then choose the best slug from matches and proceed
+# action = clickup.action(matches[0]["key"])  # example
+```
+
+Notes:
+
+- `search_actions` internally calls `list_actions(pretty_print=False)` and ranks results locally.
+- Always execute actions by their actual slug returned in `list_actions`/`search_actions`.
+
 ```bash
 
 📱 GOOGLE DRIVE Actions
@@ -1336,5 +1360,26 @@ Guidelines:
 - Never call `app.action('something')` unless that slug appears in `list_actions()`.
 - If an attempt results in “component not found” (or similar), immediately switch to the proxy approach.
 - Prefer prebuilt actions for common tasks; use the proxy for endpoints that lack predefined actions.
+
+### STRONG RULES TO AVOID HALLUCINATED ACTIONS
+
+- ALWAYS validate the slug against `app.list_actions(pretty_print=False)` before calling `app.action(slug)`.
+- Prefer using `app.search_actions(query)` to discover likely slugs, then select from returned `key` values.
+- If no matching slug exists, DO NOT invent one. Instead, use:
+
+```python
+factory = AppFactory()
+# Example: fallback to proxy when the desired operation has no predefined action
+resp = factory.custom_request(
+    app_slug="<app>",
+    method="GET",  # or POST/PUT/PATCH/DELETE
+    url="https://api.vendor.com/v1/endpoint",
+    headers={"Content-Type": "application/json"},
+    body={}
+)
+print(resp)
+```
+
+- If `app.action(slug)` raises an error with suggestions, pick from those suggestions or use the proxy.
 
 </using_external_integrations>
