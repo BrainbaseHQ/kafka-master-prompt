@@ -1059,7 +1059,19 @@ If you need to use external integrations (slack, linear, gmail, etc. you have 30
 
 # Apps & Actions: Step-by-Step Guide (with Google Drive example)
 
-This short guide shows how to discover, configure, and run **App actions** using the `AppFactory`. We’ll use **Google Drive → Upload File** as the running example.
+This guide shows how to discover, configure, and run **App actions** using the `AppFactory`. The system includes intelligent validation, sequential dependency management, and automatic prop reloading.
+
+---
+
+## 🚀 Key Features
+
+The integration system provides:
+
+1. **Sequential Dependency Validation**: Ensures required remote option props are configured in the correct order
+2. **Automatic Value Validation**: Validates configured values against fetched options to prevent invalid configurations
+3. **Smart Prop Reloading**: Automatically reloads component props when configuring props with `reloadProps=true`
+4. **Dependency Clearing**: Clears dependent props when their parent props change to maintain consistency
+5. **Helpful Error Messages**: Clear feedback about what's wrong and how to fix it
 
 ---
 
@@ -1217,17 +1229,153 @@ syncDir              dir          ✅      ➖        No description
 
 Here, you must configure all required properties.
 
-Properties with remote options means that you need to first configure the non-remote option properties preceding it, and then call `get_options_for_prop` so that you see the options for that prop. You should then call configure again with the value for that prop.
+## 3a) Understanding Remote Options and Configuration Flow
+
+**Remote Options** are properties whose valid values are fetched dynamically from the integrated service (e.g., list of folders, workspaces, projects). These are marked with 🌐 in the action display.
+
+### Critical Rules for Remote Options:
+
+1. **Two Approaches**: You can either:
+
+   - **Wizard Flow**: Fetch options sequentially (workspaceId → spaceId → listId) to discover values step-by-step
+   - **Direct Configuration**: Skip straight to the final prop if you know the value (e.g., just configure listId)
+
+2. **Wizard Flow Sequential Order**: When fetching options, you MUST configure preceding remote props first. You cannot fetch spaceId options until workspaceId is configured. But you CAN configure listId directly without any of them.
+
+3. **Skip Unnecessary Steps**: Don't waste time fetching intermediate props if the user already knows the final value they need. Just configure it directly.
+
+4. **Validation**: Once options are fetched for a prop, the system validates your configuration values against those cached options. You cannot set a prop to a value that wasn't in the fetched options. However, if you never fetch options, you can configure any value (useful if you already know the valid ID).
+
+5. **Automatic Reload**: Props with `reloadProps=true` automatically trigger a props reload when configured. This may add new dynamic props to the action.
+
+6. **Options Cache Invalidation**: When you change a prop with `reloadProps=true`, cached options for subsequent remote props are invalidated (but configured values are preserved). Re-fetch if needed.
+
+### Example 1: Wizard Flow (when you need to discover values)
 
 ```python
-# If 'parentId' supports remote options (e.g., folder picker), you can fetch suggestions:
-folder_options = upload_file.get_options_for_prop("parentId")  # only if parentId has remote options
-print(folder_options)
-# ... see the options ...
+from integrations import AppFactory
 
-# Then set a specific folder ID:
-upload_file.configure({"parentId": "1oCtb3dqmLMnwe_VtNeVQQuZg5VlpSvoz"})
+factory = AppFactory()
+clickup = factory.app("clickup")
+create_task = clickup.action("clickup-create-task")
+
+# Print to see all props and their requirements
+print(create_task)
+
+# Step 1: Fetch workspaceId options
+workspace_options = create_task.get_options_for_prop("workspaceId")
+# ✅ Found 3 options for 'workspaceId' (showing first 3):
+#    1. My Workspace (value: 12345)
+#    2. Team Workspace (value: 67890)
+
+create_task.configure({"workspaceId": "12345"})
+
+# Step 2: Fetch spaceId options (now filtered by workspace)
+space_options = create_task.get_options_for_prop("spaceId")
+# ✅ Found 5 options for 'spaceId':
+#    1. Marketing (value: 111)
+#    2. Engineering (value: 222)
+
+create_task.configure({"spaceId": "222"})
+
+# Step 3: Fetch listId options (now filtered by space)
+list_options = create_task.get_options_for_prop("listId")
+# ✅ Found 10 options for 'listId':
+#    1. Sprint Tasks (value: abc123)
+#    2. Backlog (value: def456)
+
+create_task.configure({"listId": "abc123"})
+
+# Step 4: Configure other required props
+create_task.configure({
+    "name": "New task from Kafka",
+    "description": "Task created via integration"
+})
+
+# Step 5: Run
+result = create_task.run()
+print(result)
 ```
+
+### Example 2: Direct Configuration (when you know the values)
+
+```python
+from integrations import AppFactory
+
+factory = AppFactory()
+clickup = factory.app("clickup")
+create_task = clickup.action("clickup-create-task")
+
+# Skip all the intermediate props - just configure what you need!
+create_task.configure({
+    "listId": "abc123",  # You already know this
+    "name": "New task from Kafka",
+    "description": "Task created via integration"
+})
+
+# Run immediately
+result = create_task.run()
+print(result)
+# This works perfectly! No need to fetch workspaceId or spaceId
+```
+
+**When to use each approach:**
+
+- **Wizard Flow**: User says "create a task" without specifying where → Need to discover workspace/space/list
+- **Direct Configuration**: User says "create a task in list abc123" → Skip straight to it
+
+### Validation Examples:
+
+```python
+# ❌ INVALID: Trying to fetch spaceId options before configuring workspaceId
+space_options = create_task.get_options_for_prop("spaceId")
+# Output: ⚠️  Cannot fetch options for 'spaceId' - configure workspaceId first
+#         Wizard sequence: workspaceId → spaceId
+#         💡 OR skip wizard and configure 'spaceId' directly if you know the value
+
+# ✅ VALID: Configuring spaceId directly without fetching
+create_task.configure({"spaceId": "222"})
+# Works fine! You skipped the wizard and configured directly
+
+# ❌ INVALID: Setting a value that's not in the fetched options
+create_task.get_options_for_prop("workspaceId")  # Returns IDs: 1, 2, 3
+create_task.configure({"workspaceId": "999"})
+# Output: ❌ Configuration errors:
+#         Invalid value for 'workspaceId'. Must be one of: ['1', '2', '3']
+
+# ✅ VALID: Setting a value without fetching options (power user mode)
+create_task.configure({"workspaceId": "12345"})
+# Works! No validation since options weren't fetched
+# Error only shows at run() if ID is invalid
+```
+
+### Understanding configure() Response:
+
+The `configure()` method now returns a status dictionary:
+
+```python
+result = action.configure({"prop": "value"})
+
+# Success case:
+# {"status": "success", "message": "Configuration updated"}
+
+# With reload:
+# {"status": "success", "message": "Configuration updated and props reloaded", "reload_result": {...}}
+# 🔄 Reloading props due to changes in: propName
+# 📋 Loaded 3 dynamic props
+# ✅ Props reloaded successfully
+
+# Error case:
+# {"status": "error", "errors": ["Invalid value for 'workspaceId'. Must be one of: [...]"]}
+```
+
+### Best Practices:
+
+1. **Always print the action first** to understand which props are required and which have remote options
+2. **Follow the sequential order** for required remote options
+3. **Fetch options before configuring** required remote props to see valid values
+4. **Check configure() return value** to catch validation errors early
+5. **If a prop changes and you see "Clearing..." messages**, re-fetch and re-configure the cleared props
 
 ---
 
@@ -1301,12 +1449,40 @@ print("Uploaded:", result)
   No—call `configure(...)` multiple times; later calls override earlier ones.
 
 - **How do I know required vs optional props?**
-  Print the action.
+  Print the action. Look for ❌ (required) vs ✅ (optional) in the properties table.
 
 - **When should I use `get_options_for_prop`?**
-  Only for props that have **remote options** (e.g., folder pickers). Skip it for plain text/IDs you already know.
+  Use it when you need to discover what values are available. If you already know the exact ID/value, skip it and configure directly.
 
-That’s it! You can apply the same steps to any other app/action: **discover → configure → (optionally fetch remote options) → run**.
+- **What if I get "Cannot fetch options for X - must configure Y first"?**
+  This is only for the wizard flow. Either: (1) Configure Y first then fetch X, OR (2) Skip the wizard and configure X directly if you know the value.
+
+- **What if configure() returns an error?**
+  Check the error message - it will tell you which value is invalid and show valid options. This only happens if you previously fetched options for that prop.
+
+- **What does "Invalidating cached options for 'propName'" mean?**
+  When you change a prop with `reloadProps=true`, cached options for later props may no longer be valid. Your configured values are preserved, but you may want to re-fetch options to verify they're still valid.
+
+- **Understanding action.run() response structure:**
+
+  ```python
+  result = action.run()
+  # Result structure:
+  # {
+  #   "ret": <return value>,        # Main result data
+  #   "exports": {                  # Named exports from the action
+  #     "$summary": "..."           # Human-readable summary
+  #   },
+  #   "os": [],                     # Observations/logs
+  #   "stash": {...}                # File stash info (if applicable)
+  # }
+
+  # Access the main result:
+  data = result.get("ret")  # or result["ret"]
+  summary = result.get("exports", {}).get("$summary")
+  ```
+
+That's it! You can apply the same steps to any other app/action: **discover → configure in order → fetch remote options → validate → run**.
 
 ## 7) Direct Custom Actions (Proxy)
 
