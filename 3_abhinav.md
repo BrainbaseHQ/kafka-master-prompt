@@ -1229,7 +1229,56 @@ syncDir              dir          ✅      ➖        No description
 
 Here, you must configure all required properties.
 
-## 3a) Understanding Remote Options and Configuration Flow
+## 3a) Common Mistakes to Avoid ⚠️
+
+### 1. Array Fields - Use Lists!
+
+```python
+# ❌ WRONG
+action.configure({"assignees": 99927317.0})  # Single value for array field
+
+# ✅ CORRECT
+action.configure({"assignees": [99927317.0]})  # List for array field
+```
+
+### 2. Static Options - Use Exact Values!
+
+```python
+# ❌ WRONG
+action.configure({"priority": "4. Low"})  # Don't use display indices
+
+# ✅ CORRECT
+action.configure({"priority": "Low"})  # Use exact value from options
+```
+
+### 3. Result Validation - Don't Trust Status Alone!
+
+```python
+# ❌ WRONG
+result = action.run()
+print("Success!")  # Assuming it worked
+
+# ✅ CORRECT
+result = action.run()
+ret = result.get("ret", {})
+if ret.get("priority", {}).get("priority") != "low":
+    print("⚠️ Priority wasn't set correctly!")
+```
+
+### 4. Don't Assume Sequential Dependencies
+
+```python
+# ❌ WRONG ASSUMPTION
+# "I must fetch workspaceId, then spaceId, then assignees, then tags"
+
+# ✅ CORRECT UNDERSTANDING
+# "assignees and tags are independent - I can fetch either first"
+# "I can skip straight to listId if I know it"
+```
+
+---
+
+## 3b) Understanding Remote Options and Configuration Flow
 
 **Remote Options** are properties whose valid values are fetched dynamically from the integrated service (e.g., list of folders, workspaces, projects). These are marked with 🌐 in the action display.
 
@@ -1237,12 +1286,16 @@ Here, you must configure all required properties.
 
 1. **Two Approaches**: You can either:
 
-   - **Wizard Flow**: Fetch options sequentially (workspaceId → spaceId → listId) to discover values step-by-step
-   - **Direct Configuration**: Skip straight to the final prop if you know the value (e.g., just configure listId)
+   - **Discovery Flow**: Fetch options for props you need to discover (e.g., "what workspaces exist?")
+   - **Direct Configuration**: Skip straight to configuring if you know the value
 
-2. **Wizard Flow Sequential Order**: When fetching options, you MUST configure preceding remote props first. You cannot fetch spaceId options until workspaceId is configured. But you CAN configure listId directly without any of them.
+2. **No Sequential Dependency Enforcement**: Remote option props are generally INDEPENDENT. You can fetch/configure them in any order. Examples:
 
-3. **Skip Unnecessary Steps**: Don't waste time fetching intermediate props if the user already knows the final value they need. Just configure it directly.
+   - `assignees` and `tags` are independent - fetch either first
+   - `workspaceId`, `spaceId`, `listId` may filter each other, but you can skip to `listId` directly if you know it
+   - The API will tell you if you're missing something required
+
+3. **Skip Unnecessary Steps**: Don't waste time fetching props you don't need. If the user provides specific IDs, use them directly.
 
 4. **Validation**: Once options are fetched for a prop, the system validates your configuration values against those cached options. You cannot set a prop to a value that wasn't in the fetched options. However, if you never fetch options, you can configure any value (useful if you already know the valid ID).
 
@@ -1324,19 +1377,47 @@ print(result)
 - **Wizard Flow**: User says "create a task" without specifying where → Need to discover workspace/space/list
 - **Direct Configuration**: User says "create a task in list abc123" → Skip straight to it
 
-### Validation Examples:
+### Important Usage Patterns:
+
+#### 1. Array Fields (string[], number[])
 
 ```python
-# ❌ INVALID: Trying to fetch spaceId options before configuring workspaceId
-space_options = create_task.get_options_for_prop("spaceId")
-# Output: ⚠️  Cannot fetch options for 'spaceId' - configure workspaceId first
-#         Wizard sequence: workspaceId → spaceId
-#         💡 OR skip wizard and configure 'spaceId' directly if you know the value
+# When get_options_for_prop shows "This is an array field":
+assignees = create_task.get_options_for_prop("assignees")
+# ✅ Found 2 options for 'assignees':
+#    • Abhinav Tumu → 105951739.0
+#    • Michael Liu → 99927317.0
+# 💡 This is an array field. Configure with a list:
+#    action.configure({'assignees': [105951739.0]})  # Single value
+#    action.configure({'assignees': [105951739.0, 99927317.0]})  # Multiple values
 
-# ✅ VALID: Configuring spaceId directly without fetching
-create_task.configure({"spaceId": "222"})
-# Works fine! You skipped the wizard and configured directly
+# ✅ CORRECT: Use list with numeric values
+create_task.configure({"assignees": [99927317.0]})  # or [99927317] or ["99927317"]
+# All formats work - the system normalizes them
 
+# ❌ WRONG: Don't use single value for array field
+create_task.configure({"assignees": 99927317.0})  # This might fail
+```
+
+#### 2. Static Options (with predefined choices)
+
+```python
+# When print(action) shows:
+# priority    string    ✅    ➖    The level of priority
+#             🎯 Options: Urgent, High, Normal, Low
+#                Use these EXACT values when configuring
+
+# ✅ CORRECT: Use the exact string value
+create_task.configure({"priority": "Low"})  # Not "4. Low" or "4"
+
+# ❌ WRONG: Don't add numbers or indices
+create_task.configure({"priority": "4. Low"})  # This will fail
+create_task.configure({"priority": "4"})  # This will also fail
+```
+
+#### 3. Validation Examples
+
+```python
 # ❌ INVALID: Setting a value that's not in the fetched options
 create_task.get_options_for_prop("workspaceId")  # Returns IDs: 1, 2, 3
 create_task.configure({"workspaceId": "999"})
@@ -1347,6 +1428,33 @@ create_task.configure({"workspaceId": "999"})
 create_task.configure({"workspaceId": "12345"})
 # Works! No validation since options weren't fetched
 # Error only shows at run() if ID is invalid
+```
+
+#### 4. Result Validation - CRITICAL
+
+```python
+# ❌ WRONG: Don't just trust the status
+result = create_task.run()
+if result.get("exports", {}).get("$summary"):
+    print("Task created!")  # BAD - doesn't verify actual values
+
+# ✅ CORRECT: Verify the actual result matches expectations
+result = create_task.run()
+ret = result.get("ret", {})
+
+# Check specific fields
+if ret.get("priority", {}).get("priority") != "low":
+    print(f"⚠️ Priority not set correctly. Expected 'low', got '{ret.get('priority', {}).get('priority')}'")
+    # Maybe try again or use update action
+
+if not ret.get("assignees"):
+    print("⚠️ No assignees set. Expected Michael Liu")
+    # Use update action to fix
+
+# Check the actual values in the response
+print(f"Task created: {ret.get('url')}")
+print(f"Priority: {ret.get('priority', {}).get('priority')}")
+print(f"Assignees: {[a.get('username') for a in ret.get('assignees', [])]}")
 ```
 
 ### Understanding configure() Response:
@@ -1454,11 +1562,14 @@ print("Uploaded:", result)
 - **When should I use `get_options_for_prop`?**
   Use it when you need to discover what values are available. If you already know the exact ID/value, skip it and configure directly.
 
-- **What if I get "Cannot fetch options for X - must configure Y first"?**
-  This is only for the wizard flow. Either: (1) Configure Y first then fetch X, OR (2) Skip the wizard and configure X directly if you know the value.
+- **How do I configure array fields (string[], number[])?**
+  Always use a list: `action.configure({"assignees": [value1, value2]})`. The system accepts numbers, strings, or floats - it normalizes them.
+
+- **How do I use static options?**
+  Use the EXACT value shown in the options list. For `Options: Urgent, High, Normal, Low`, use `"Low"` not `"4. Low"` or `"4"`.
 
 - **What if configure() returns an error?**
-  Check the error message - it will tell you which value is invalid and show valid options. This only happens if you previously fetched options for that prop.
+  Check the error message - it will tell you which value is invalid. This only happens if you previously fetched options for that prop. For array fields, check that you're using a list.
 
 - **What does "Invalidating cached options for 'propName'" mean?**
   When you change a prop with `reloadProps=true`, cached options for later props may no longer be valid. Your configured values are preserved, but you may want to re-fetch options to verify they're still valid.
