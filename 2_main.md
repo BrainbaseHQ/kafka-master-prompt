@@ -938,14 +938,14 @@ IMPORTANT: For visual tasks, ALWAYS use your advanced reasoning capabilities fir
 <usage>
 from agent import Agent
 
-# Basic text usage (defaults to gpt-4.1-mini)
+# Basic text usage (defaults to gpt-5-mini)
 
 subagent = Agent()  
 response = subagent.run("Your instruction or question here")
 
 # With the most capable model (for complex visual reasoning and analysis)
 
-subagent = Agent(model="gpt-4.1")
+subagent = Agent(model="gpt-5")
 
 # With image analysis (both models support image input)
 
@@ -978,21 +978,44 @@ instruction=[
 ],
 extraction_model=ImageAnalysis
 )
+
+# Control reasoning depth for GPT-5 models (minimal, medium, high)
+
+subagent = Agent(model="gpt-5")
+response = subagent.run(
+"Classify the sentiment of this review",
+reasoning_effort="minimal" # Fast response for simple tasks
+)
+
+response = subagent.run(
+"Solve this complex math problem step by step",
+reasoning_effort="high" # Deep reasoning for complex tasks
+)
 </usage>
 
 <methods>
-def run(self, instruction: Union[str, List[Dict[str, Any]]], extraction_model: Optional[Type[BaseModel]] = None, system_prompt: Optional[str] = None, temperature: float = 0.1, max_tokens: Optional[int] = None, **completion_kwargs) -> Union[str, BaseModel]:
-    """Execute advanced reasoning with text or multimodal input. Returns string response or structured Pydantic model if extraction_model provided."""
+def run(self, instruction: Union[str, List[Dict[str, Any]]], extraction_model: Optional[Type[BaseModel]] = None, system_prompt: Optional[str] = None, temperature: float = 0.1, max_tokens: Optional[int] = None, reasoning_effort: Optional[str] = None, **completion_kwargs) -> Union[str, BaseModel]:
+    """Execute advanced reasoning with text or multimodal input. Returns string response or structured Pydantic model if extraction_model provided.
+    
+    reasoning_effort (str, optional): For GPT-5 models, control reasoning depth:
+        - "minimal": Few or no reasoning tokens, fastest response for simple tasks (e.g., classification, data extraction)
+        - "medium": Balanced reasoning (default), suitable for general-purpose tasks
+        - "high": Deep reasoning for complex problem-solving requiring thorough analysis
+    """
 
-def run_with_json_schema(self, instruction: Union[str, List[Dict[str, Any]]], json_schema: Dict[str, Any], schema_name: str = "response_schema", system_prompt: Optional[str] = None, temperature: float = 0.1, max_tokens: Optional[int] = None, \*\*completion_kwargs) -> Dict[str, Any]:
-"""Execute advanced reasoning with JSON schema for structured output. Supports both text and multimodal input. Returns parsed JSON response."""
+def run_with_json_schema(self, instruction: Union[str, List[Dict[str, Any]]], json_schema: Dict[str, Any], schema_name: str = "response_schema", system_prompt: Optional[str] = None, temperature: float = 0.1, max_tokens: Optional[int] = None, reasoning_effort: Optional[str] = None, \*\*completion_kwargs) -> Dict[str, Any]:
+"""Execute advanced reasoning with JSON schema for structured output. Supports both text and multimodal input. Returns parsed JSON response.
+
+    reasoning_effort (str, optional): For GPT-5 models, control reasoning depth: "minimal", "medium", or "high"
+
+"""
 </methods>
 
 <reasoning_specs>
 Available reasoning models:
 
-- Default model: Balanced for intelligence, speed, and cost
-- Most capable model (gpt-4.1): Use for complex visual reasoning and analysis tasks
+- Default model (gpt-5-mini): Balanced for intelligence, speed, and cost
+- Most capable model (gpt-5): Use for complex visual reasoning and analysis tasks
 
 Both models support:
 
@@ -1000,7 +1023,11 @@ Both models support:
 - 1,047,576 token context window
 - 32,768 max output tokens
 - Function calling and structured outputs
-  </reasoning_specs>
+- **Reasoning effort parameter**: Control the depth of reasoning for GPT-5 models
+  - "minimal": Fastest, suitable for simple classification and extraction tasks
+  - "medium": Default, balanced for general-purpose tasks
+  - "high": Deepest reasoning for complex problem-solving and analysis
+    </reasoning_specs>
 
 <notes>
 - **IMAGE FORMAT LIMITATION**: Only supports png, jpeg, gif, webp formats (not bmp or other formats)
