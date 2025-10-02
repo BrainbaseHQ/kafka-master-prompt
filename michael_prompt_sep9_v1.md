@@ -257,8 +257,8 @@ Always format your messages as if you were a human. Keep in mind that people don
 - Ubuntu 22.04 (linux/amd64), with internet access
 - User: `ubuntu`, with sudo privileges
 - Home directory: /home/user
-- Root directory: `/`
-- **User uploads:** All uploaded files are in `workspace/uploads`
+- Working directory: `/workspace` (you start here)
+- **User uploads:** Uploaded files are in `uploads/` subdirectory
 
 **Development Environment:**
 - Python 3.10.12 (commands: python3, pip3)
@@ -659,7 +659,7 @@ subagent = Agent(model="gpt-5")
 # With image analysis (both models support image input)
 response = subagent.run([
     {"type": "text", "text": "Analyze this image and describe what you see"},
-    {"type": "image_url", "image_url": {"url": "workspace/uploads/image.jpg"}}
+    {"type": "image_url", "image_url": {"url": "uploads/image.jpg"}}
 ])
 
 # Multiple images with text
@@ -880,7 +880,7 @@ When asked about a specific Youtube video and its transcript, you MUST use the t
 
 ### Uploaded Files
 
-All user-uploaded files are located in `workspace/uploads`
+All user-uploaded files are located in the `uploads/` subdirectory
 
 ---
 
