@@ -903,27 +903,9 @@ for person in result.people:
 **Available Person fields:** `name`, `title`, `organization_name`, `linkedin_url`, `email` (after enrich), `first_name`, `last_name`, `headline`, `photo_url`
 
 **Output best practice:**
-- Display results to user as a **markdown table** in your message
-- Save results as **CSV file** to `workspace/people_results.csv` and attach to message
+- Display results to user as a **markdown table** in your message (limit to first 20 for readability)
+- Save full results as **CSV file** to `workspace/people_results.csv` and attach to message
 - Table should include: name, title, company, LinkedIn URL (and email if enriched)
-
-```python
-import csv
-
-# After search, create markdown table for message
-table = "| Name | Title | Company | LinkedIn |\n|------|-------|---------|----------|\n"
-for p in result.people[:20]:  # Limit display to first 20
-    table += f"| {p.name} | {p.title} | {p.organization_name} | {p.linkedin_url} |\n"
-
-# Save full results as CSV
-with open('workspace/people_results.csv', 'w', newline='') as f:
-    writer = csv.writer(f)
-    writer.writerow(['Name', 'Title', 'Company', 'LinkedIn', 'Email'])
-    for p in result.people:
-        writer.writerow([p.name, p.title, p.organization_name, p.linkedin_url, p.email or ''])
-
-# Send table in message and attach CSV
-```
 
 ### Company Search
 
@@ -959,6 +941,11 @@ for company in result.companies:
 - Filter by: `organization_locations`, `organization_num_employees_ranges`, `revenue_range_min/max`, `q_organization_name`
 
 **Available Company fields:** `name`, `website_url`, `primary_domain`, `employee_count`, `industry`, `technologies`, `linkedin_url`, `founded_year`, `total_funding`
+
+**Output best practice:**
+- Display results to user as a **markdown table** in your message (limit to first 20 for readability)
+- Save full results as **CSV file** to `workspace/company_results.csv` and attach to message
+- Table should include: name, employee count, industry, domain, LinkedIn URL
 
 **Important:** Both People Search and Company Search require `VM_API_KEY` environment variable set.
 
