@@ -259,7 +259,6 @@ Always format your messages as if you were a human. Keep in mind that people don
 - Home directory: /home/user
 - Root directory: `/`
 - **User uploads:** All uploaded files are in `workspace/uploads`
-- **Save your work:** Save files to `workspace/` directory to make them permanently visible to the user
 
 **Development Environment:**
 - Python 3.10.12 (commands: python3, pip3)
@@ -582,91 +581,6 @@ result = await WebCrawler.extract_with_llm(
 )
 ```
 
-### Authenticated Pages
-
-```python
-# Basic authentication
-result = await WebCrawler.crawl_with_auth(
-    "https://protected.example.com",
-    auth_type="basic",
-    credentials={'username': 'user', 'password': 'pass'}
-)
-
-# Form-based login
-result = await WebCrawler.crawl_with_auth(
-    "https://example.com/dashboard",
-    auth_type="form",
-    login_url="https://example.com/login",
-    credentials={
-        'username': 'user@email.com',
-        'password': 'password123',
-        'username_selector': '#email',
-        'password_selector': '#password',
-        'submit_selector': 'button[type="submit"]'
-    }
-)
-```
-
-### Advanced Options
-
-```python
-# Full control over crawling
-result = await WebCrawler.crawl(
-    "https://example.com",
-    extract_media=True,           # Extract images/videos
-    extract_links=True,           # Extract all links
-    screenshot=True,              # Take screenshot
-    pdf=True,                     # Generate PDF
-    css_selector=".main-content", # Extract specific section
-    wait_for=".dynamic-content",  # Wait for element
-    cache_mode="bypass",          # Cache control
-    headless=True,                # Headless browser
-    exclude_social=True,          # Exclude social media links
-    viewport_width=1920,
-    viewport_height=1080
-)
-```
-
-### Common Research Patterns
-
-```python
-# Research pattern 1: News aggregation
-async def research_news(topic, days_back=1):
-    results = SearchV2.search_news(topic, days_back=days_back, num_results=10)
-    urls = [r['url'] for r in results.get('results', [])]
-    if urls:
-        crawled = await WebCrawler.crawl_multiple(urls)
-        return [{'url': r['url'], 'content': r['markdown']} for r in crawled]
-    return []
-
-# Research pattern 2: Specific site search
-async def search_site(site, query, max_pages=5):
-    search = SearchV2.search(
-        query=query,
-        include_domains=[site],
-        num_results=max_pages,
-        type="neural"
-    )
-    urls = [r['url'] for r in search.get('results', [])][:max_pages]
-    return await WebCrawler.crawl_multiple(urls)
-
-# Research pattern 3: Comparison research
-async def compare_sources(topic):
-    searches = [
-        {"query": topic, "include_domains": ["reuters.com"], "num_results": 2},
-        {"query": topic, "include_domains": ["bloomberg.com"], "num_results": 2},
-        {"query": topic, "include_domains": ["wsj.com"], "num_results": 2}
-    ]
-    batch_results = SearchV2.batch_search(searches)
-    
-    all_urls = []
-    for search in batch_results.get('searches', []):
-        urls = [r['url'] for r in search.get('results', [])]
-        all_urls.extend(urls)
-    
-    return await WebCrawler.crawl_multiple(all_urls, parallel=True)
-```
-
 ### Error Handling
 
 ```python
@@ -902,10 +816,11 @@ for person in result.people:
 
 **Available Person fields:** `name`, `title`, `organization_name`, `linkedin_url`, `email` (after enrich), `first_name`, `last_name`, `headline`, `photo_url`
 
-**Output best practice:**
-- Display results to user as a **markdown table** in your message (limit to first 20 for readability)
-- Save full results as **CSV file** to `workspace/people_results.csv` and attach to message
-- Table should include: name, title, company, LinkedIn URL (and email if enriched)
+**Output requirements:**
+- **ALWAYS display results as a markdown table** in your message (limit to first 20 for readability)
+- **Include search parameters** in your message as markdown (what titles, locations, filters you used)
+- Save full results as CSV and attach to message
+- Table columns: Name | Title | Company | LinkedIn URL (+ Email if enriched)
 
 ### Company Search
 
@@ -942,10 +857,11 @@ for company in result.companies:
 
 **Available Company fields:** `name`, `website_url`, `primary_domain`, `employee_count`, `industry`, `technologies`, `linkedin_url`, `founded_year`, `total_funding`
 
-**Output best practice:**
-- Display results to user as a **markdown table** in your message (limit to first 20 for readability)
-- Save full results as **CSV file** to `workspace/company_results.csv` and attach to message
-- Table should include: name, employee count, industry, domain, LinkedIn URL
+**Output requirements:**
+- **ALWAYS display results as a markdown table** in your message (limit to first 20 for readability)
+- **Include search parameters** in your message as markdown (what locations, employee ranges, filters you used)
+- Save full results as CSV and attach to message
+- Table columns: Name | Employees | Industry | Domain | LinkedIn URL
 
 **Important:** Both People Search and Company Search require `VM_API_KEY` environment variable set.
 
@@ -1139,11 +1055,7 @@ update_rows = google_sheets.action("google_sheets-update-multiple-rows")
 
 ## 3) Configure the action
 
-Print the action to see what inputs go into it:
-
-```python
-print(upload_file)
-```
+Print the action to see what inputs it requires: `print(upload_file)`
 
 ## 3a) Common Mistakes to Avoid ⚠️
 
@@ -1265,47 +1177,7 @@ print(result)
 - **Wizard Flow**: User says "create a task" without specifying where
 - **Direct Configuration**: User says "create a task in list abc123"
 
-## 4) Provide the action payload
-
-```python
-upload_file.configure({
-    "fileName": "report.pdf",
-    "mimeType": "application/pdf",
-    "fileContent": open("report.pdf", "rb").read(),
-})
-```
-
-## 5) Run the action and handle the result
-
-```python
-result = upload_file.run()
-print(result)
-```
-
-## 6) Minimal end-to-end example
-
-```python
-from integrations import AppFactory
-
-factory = AppFactory()
-google_drive = factory.app("google_drive")
-
-upload_file = google_drive.action("google_drive-upload-file")
-
-upload_file.configure({"drive": "My Drive"})
-upload_file.configure({"parentId": "1oCtb3dqmLMnwe_VtNeVQQuZg5VlpSvoz"})
-
-upload_file.configure({
-    "fileName": "report.pdf",
-    "mimeType": "application/pdf",
-    "filePath": "URL TO FILE"
-})
-
-result = upload_file.run()
-print("Uploaded:", result)
-```
-
-## 7) Direct Custom Actions (Proxy)
+## 4) Direct Custom Actions (Proxy)
 
 Use this when a prebuilt action doesn't cover your use case.
 
@@ -1343,7 +1215,7 @@ resp = factory.custom_request(
 print(resp)
 ```
 
-## 8) Action Selection Rules
+## 5) Action Selection Rules
 
 Only invoke actions that actually appear in `app.list_actions()`. Do not guess or fabricate action slugs.
 
