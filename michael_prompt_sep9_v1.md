@@ -258,7 +258,8 @@ Always format your messages as if you were a human. Keep in mind that people don
 - User: `ubuntu`, with sudo privileges
 - Home directory: /home/user
 - Root directory: `/`
-- All user uploads will be in `/uploads`
+- **User uploads:** All uploaded files are in `workspace/uploads`
+- **Save your work:** Save files to `workspace/` directory to make them permanently visible to the user
 
 **Development Environment:**
 - Python 3.10.12 (commands: python3, pip3)
@@ -870,20 +871,22 @@ await doc.process()
 **When to use:** Finding people by title, location, company, seniority, or other criteria.
 
 ```python
-from actions.people_search import PeopleSearch
+from people_search import PeopleSearch  # Note: NOT from actions.people_search
 
 ps = PeopleSearch()  # Requires VM_API_KEY env var
 result = ps.search(
     person_titles=["Software Engineer", "Engineering Manager"],
     person_locations=["San Francisco Bay Area"],
     q_organization_domains_list=["stripe.com"],
-    iterate_all=True,  # Auto-fetch all pages
+    per_page=25,      # Results per page (not page_size)
+    iterate_all=True, # Auto-fetch all pages
     max_pages=5
 )
 
 # Access results
 for person in result.people:
-    print(f"{person.name} - {person.title} at {person.organization_name}")
+    print(f"{person.name} - {person.title}")
+    print(f"Company: {person.organization_name}")
     print(f"LinkedIn: {person.linkedin_url}")
     
     # Optional: Enrich to get email/phone (costs credits)
@@ -892,21 +895,48 @@ for person in result.people:
 ```
 
 **Key parameters:** 
+- `per_page` - Results per page (default: 25, not "page_size")
 - `iterate_all=True` - Automatically handles pagination
 - `max_pages` - Limit total pages fetched
-- Filter by: titles, locations, seniorities, organizations, technologies
+- Filter by: `person_titles`, `person_locations`, `person_seniorities`, `q_organization_domains_list`
+
+**Available Person fields:** `name`, `title`, `organization_name`, `linkedin_url`, `email` (after enrich), `first_name`, `last_name`, `headline`, `photo_url`
+
+**Output best practice:**
+- Display results to user as a **markdown table** in your message
+- Save results as **CSV file** to `workspace/people_results.csv` and attach to message
+- Table should include: name, title, company, LinkedIn URL (and email if enriched)
+
+```python
+import csv
+
+# After search, create markdown table for message
+table = "| Name | Title | Company | LinkedIn |\n|------|-------|---------|----------|\n"
+for p in result.people[:20]:  # Limit display to first 20
+    table += f"| {p.name} | {p.title} | {p.organization_name} | {p.linkedin_url} |\n"
+
+# Save full results as CSV
+with open('workspace/people_results.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Name', 'Title', 'Company', 'LinkedIn', 'Email'])
+    for p in result.people:
+        writer.writerow([p.name, p.title, p.organization_name, p.linkedin_url, p.email or ''])
+
+# Send table in message and attach CSV
+```
 
 ### Company Search
 
 **When to use:** Finding companies by location, size, industry, funding, or technologies.
 
 ```python
-from actions.company_search import CompanySearch
+from company_search import CompanySearch  # Note: NOT from actions.company_search
 
 cs = CompanySearch()  # Requires VM_API_KEY env var
 result = cs.search(
     organization_locations=["Ireland", "Japan"],
     organization_num_employees_ranges=["250,1000", "5000,10000"],
+    per_page=25,
     iterate_all=True,
     max_pages=3
 )
@@ -914,6 +944,7 @@ result = cs.search(
 # Access results
 for company in result.companies:
     print(f"{company.name} - {company.employee_count} employees")
+    print(f"Domain: {company.primary_domain}")
     
     # Optional: Enrich for full company profile
     company.enrich()
@@ -922,10 +953,14 @@ for company in result.companies:
 ```
 
 **Key parameters:**
+- `per_page` - Results per page (default: 25, not "page_size")
 - `iterate_all=True` - Automatically handles pagination
-- Filter by: locations, employee ranges, revenue, funding, technologies, job postings
+- `max_pages` - Limit total pages fetched
+- Filter by: `organization_locations`, `organization_num_employees_ranges`, `revenue_range_min/max`, `q_organization_name`
 
-**Important:** Both tools require `VM_API_KEY` environment variable set.
+**Available Company fields:** `name`, `website_url`, `primary_domain`, `employee_count`, `industry`, `technologies`, `linkedin_url`, `founded_year`, `total_funding`
+
+**Important:** Both People Search and Company Search require `VM_API_KEY` environment variable set.
 
 ### YouTube
 
@@ -942,7 +977,7 @@ When asked about a specific Youtube video and its transcript, you MUST use the t
 
 ### Uploaded Files
 
-Any file that the user uploads will exist in `/workspace/uploads`
+All user-uploaded files are located in `workspace/uploads`
 
 ---
 
