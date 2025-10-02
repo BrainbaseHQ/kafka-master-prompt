@@ -95,7 +95,7 @@ This section provides a high-level overview of when to use each tool. Detailed c
 - Accessing authenticated APIs
 - Creating, reading, updating data in connected services
 
-**Key point:** You have 2000+ integrations. Use `factory.list_apps(query)` to discover apps, then `app.search_actions(query)` to find actions within an app.
+**Key point:** You have 2000+ integrations. Use `factory.list_apps(query="app_slug")` to search for apps by slug (e.g., "salesforce", "apollo", "gmail"), then `app.search_actions(query)` to find actions within that app.
 
 ### Document - PDF/Word/PPT Processing
 **When to use:**
@@ -883,20 +883,33 @@ This guide shows how to discover, configure, and run **App actions** using the `
 
 ## 0) Discover available apps
 
-List all apps you have access to (2000+ integrations):
+Search for apps by their slug (app identifier). Use `list_apps(query="app_slug")` to find apps:
 
 ```python
 from integrations import AppFactory
 
 factory = AppFactory()
 
-# List all apps (returns JSON with app details)
-all_apps = factory.list_apps()
-
-# Filter apps by query
+# Search for specific apps by slug
 gmail_apps = factory.list_apps(query="gmail")
+salesforce_apps = factory.list_apps(query="salesforce")
+apollo_apps = factory.list_apps(query="apollo")
 slack_apps = factory.list_apps(query="slack")
+google_drive_apps = factory.list_apps(query="google_drive")
+
+# List all apps (returns all 2000+ integrations - usually not needed)
+all_apps = factory.list_apps()
 ```
+
+**Common app slugs:**
+- `"gmail"`, `"google_calendar"`, `"google_drive"`, `"google_sheets"`
+- `"slack"`, `"microsoft_teams"`
+- `"salesforce"`, `"hubspot"`, `"pipedrive"`
+- `"apollo"`, `"greenhouse"`, `"ashby"`
+- `"clickup"`, `"linear"`, `"asana"`, `"jira"`
+- `"stripe"`, `"quickbooks"`
+
+**Note:** The query parameter searches for the **app slug**, not the display name. Use lowercase with underscores (e.g., `"google_drive"` not `"Google Drive"`).
 
 ## 1) Initialize the factory and load an app
 
