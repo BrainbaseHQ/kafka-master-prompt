@@ -816,28 +816,6 @@ await doc.process()  # must wait for document to process
 - `save_structured_data(file_path: str)`: Save structured document data as JSON
 - `get_summary() -> Dict`: Get a summary of the document
 
-### Academic Papers
-
-```python
-from academic_search import AcademicSearch
-
-res = AcademicSearch.get_pdf_from_reference(title="", author="", year="")
-```
-
-**Args:**
-- title (str): Paper title (required)
-- author (str, optional): Author name(s)
-- year (str, optional): Publication year
-- verbose (bool): If True, prints step-by-step progress
-
-### Wikipedia
-
-If you ever need to access wikipedia, and especially access historical wikipedia data, use the wiki api. Don't use browser unless you absolutely must.
-
-When looking for citations, use the subagent `from agent import Agent` to read through the entire context that you provide it.
-
-If you are asked for revisions on a specific date, and there were not revisions in that month, use the most recent revision up until that point.
-
 ### YouTube
 
 If you need to access the content or transcript of a Youtube video:
@@ -883,7 +861,7 @@ This guide shows how to discover, configure, and run **App actions** using the `
 
 ## 0) Discover available apps
 
-Search for apps by their slug (app identifier). Use `list_apps(query="app_slug")` to find apps:
+Search for apps by their slug (app identifier). Use `list_apps(query="app_slug")` to find apps.
 
 ```python
 from integrations import AppFactory
@@ -891,23 +869,40 @@ from integrations import AppFactory
 factory = AppFactory()
 
 # Search for specific apps by slug
-gmail_apps = factory.list_apps(query="gmail")
-salesforce_apps = factory.list_apps(query="salesforce")
-apollo_apps = factory.list_apps(query="apollo")
-slack_apps = factory.list_apps(query="slack")
-google_drive_apps = factory.list_apps(query="google_drive")
+# list_apps() returns a simple list of matching app slugs (strings)
+apps = factory.list_apps(query="salesforce")
+print(apps)  # Output: ['salesforce', 'salesforce_sandbox', ...]
 
-# List all apps (returns all 2000+ integrations - usually not needed)
+# Just print the results to see matching apps
+people_apps = factory.list_apps(query="apollo")
+print("Available apollo-related apps:")
+print(people_apps)  # This prints the list of app slugs
+
+# More examples
+slack_apps = factory.list_apps(query="slack")
+print(slack_apps)  # ['slack', 'slack_bot', ...]
+
+# List all apps (returns all 2000+ app slugs - usually not needed)
 all_apps = factory.list_apps()
 ```
 
+**What list_apps() returns:**
+- Returns a **list of strings** (app slugs), NOT a list of objects
+- Example output: `['salesforce', 'salesforce_sandbox']`
+- Do NOT try to call `.get()` on the results - they are strings, not dictionaries
+
+**Correct usage:**
+```python
+apps = factory.list_apps(query="apollo")
+print(apps)  # Just print the list
+
+# If you find the right app slug, load it directly:
+if apps:
+    apollo = factory.app(apps[0])  # Load first matching app
+```
+
 **Common app slugs:**
-- `"gmail"`, `"google_calendar"`, `"google_drive"`, `"google_sheets"`
-- `"slack"`, `"microsoft_teams"`
-- `"salesforce"`, `"hubspot"`, `"pipedrive"`
-- `"apollo"`, `"greenhouse"`, `"ashby"`
-- `"clickup"`, `"linear"`, `"asana"`, `"jira"`
-- `"stripe"`, `"quickbooks"`
+`"notion"`, `"google_sheets"`, `"google_docs"`, `"google_calendar"`, `"google_drive"`, `"airtable"`, `"trello"`, `"asana"`, `"clickup"`, `"monday"`, `"coda"`, `"linear"`, `"smartsheet"`, `"confluence"`, `"evernote"`, `"quip"`, `"todoist"`, `"figma"`, `"canva"`, `"adobe_acrobat_sign"`, `"docusign"`, `"miro"`, `"lucidchart"`, `"slack"`, `"microsoft_teams"`, `"zoom"`, `"gmail"`, `"outlook"`, `"telegram"`, `"discord"`, `"whatsapp_business"`, `"intercom"`, `"calendly"`, `"front"`, `"twilio"`, `"dropbox"`, `"box"`, `"onedrive"`, `"egnyte"`, `"mysql"`, `"postgresql"`, `"mongodb"`, `"snowflake"`, `"supabase"`, `"firebase"`, `"bigquery"`, `"redshift"`, `"aws"`, `"github"`, `"gitlab"`, `"bitbucket"`, `"netlify"`, `"webflow"`, `"vercel"`, `"sentry"`, `"heroku"`, `"jenkins"`, `"salesforce"`, `"hubspot"`, `"zoho_crm"`, `"pipedrive"`, `"freshsales"`, `"shopify"`, `"woocommerce"`, `"stripe"`, `"square"`, `"paypal"`, `"amazon"`, `"apollo"`, `"greenhouse"`, `"ashby"`, `"jira"`, `"quickbooks"`
 
 **Note:** The query parameter searches for the **app slug**, not the display name. Use lowercase with underscores (e.g., `"google_drive"` not `"Google Drive"`).
 
