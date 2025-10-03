@@ -103,7 +103,7 @@ This section provides a high-level overview of when to use each tool. Detailed c
 **When working with data objects (Person, Company, etc.), ONLY reference fields that actually exist on those objects.**
 
 ❌ **Common mistakes to avoid:**
-- Trying to access `person.city` or `person.location_name` (Person objects don't have these)
+- Trying to access `person.city`, `person.location_name`, or `person.employment_history` as direct attributes (these are in `person.raw` dict)
 - Trying to access `person.email` before calling `person.enrich()` (email requires enrichment)
 - Trying to access `person.company` instead of `person.organization_name`
 - Referencing fields that don't exist in the dataclass definition
@@ -112,7 +112,7 @@ This section provides a high-level overview of when to use each tool. Detailed c
 - Check the "Available fields" section for each data type (Person, Company, etc.)
 - Only use fields explicitly listed as available
 - Call `.enrich()` when you need enriched data (email, phone, etc.)
-- Use the `raw` field to access the full API response if needed
+- Use the `raw` field to access additional data (e.g., `person.raw['employment_history']`, `person.raw['city']`, `person.raw['seniority']`)
 
 **This rule applies to ALL data objects**, not just People/Company Search.
 
@@ -911,48 +911,31 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 
 **Available Person fields (ONLY use these):**
 - **Identity**: `id`, `name`, `first_name`, `last_name`
-- **Professional**: `title`, `headline`, `employment_history` (list of past/current roles)
+- **Professional**: `title`, `headline`
 - **Organization**: `organization_name`, `organization_id`, `organization_domain`
 - **Social**: `linkedin_url`, `twitter_url`, `github_url`, `facebook_url`, `photo_url`
 - **Contact**: `email_status`, `email` (only after calling `.enrich()`)
-- **Raw**: `raw` (full API response)
+- **Raw**: `raw` (full API response dict)
+  - ⚠️ **Important**: `employment_history` is in `person.raw['employment_history']`, NOT as a direct attribute
+  - Other data in raw: `city`, `state`, `country`, `organization`, `seniority`, `departments`, etc.
 
 **❌ Do NOT reference fields that don't exist on Person objects!**
-- ❌ NO `city`, `state`, or `location_name` - Use `person_locations` filter instead
-- ❌ NO `company` - Use `organization_name` instead
-- ❌ NO `email` before enrichment - Must call `person.enrich()` first
-- ❌ NO `phone` - Not available on Person objects
+- ❌ NO `person.city`, `person.state`, or `person.location_name` - These are in `person.raw` dict, not direct attributes
+- ❌ NO `person.employment_history` - Use `person.raw['employment_history']` instead
+- ❌ NO `person.company` - Use `person.organization_name` instead
+- ❌ NO `person.email` before enrichment - Must call `person.enrich()` first
+- ❌ NO `person.phone` - Not available on Person objects
 
 **🎯 Critical People Search Guidelines:**
 
 **1. For Years of Experience (YOE):**
-- ✅ **USE `employment_history` field** - This contains the person's full work history
-- ❌ **DO NOT rely on `person_seniorities` filter alone** - It's not as accurate for YOE
-- **How to calculate**: Loop through `employment_history` and calculate total years across all roles
-- **Example**:
-```python
-# After getting search results
-for person in result.people:
-    # Access employment_history to calculate YOE
-    history = person.employment_history  # List of jobs with start/end dates
-    # Calculate total years of experience from history
-```
+- ✅ **USE `person.raw['employment_history']`** - Contains full work history with start/end dates
+- ❌ **DO NOT rely on `person_seniorities` filter alone** - Not accurate for YOE
+- Calculate YOE by parsing dates from `employment_history` list, sum total months, convert to years
 
 **2. For Finding People at Seed Stage Companies:**
-- ❌ **There is NO funding stage filter in People Search** (no `funding_stage`, `latest_funding_type`, etc.)
-- ✅ **USE organization filters instead**:
-  - `organization_num_employees_ranges=["1,50", "51,200"]` (small headcount = early stage)
-  - `revenue_range_min` / `revenue_range_max` (low revenue = early stage)
-- **Example**:
-```python
-# Find people at seed-stage companies
-result = ps.search(
-    person_titles=["Software Engineer"],
-    organization_num_employees_ranges=["1,10", "11,50"],  # Small teams
-    revenue_range_max=1000000,  # Low revenue
-    per_page=25
-)
-```
+- ❌ **NO funding stage filter in People Search** (no `funding_stage` or `latest_funding_type`)
+- ✅ **USE proxies**: `organization_num_employees_ranges=["1,50"]` and/or `revenue_range_max=1000000`
 
 **Common Apollo API Gotchas:**
 - **NO `q_organization_name`** - Use `q_organization_domains_list` instead for company filtering
