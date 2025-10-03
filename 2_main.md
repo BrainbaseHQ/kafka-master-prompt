@@ -883,7 +883,7 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 **Person filters:**
 - `person_titles` (list[str]) - Job titles
 - `person_locations` (list[str]) - Person locations
-- `person_seniorities` (list[str]) - Seniority levels
+- `person_seniorities` (list[str]) - Seniority levels. NEVER USE THIS FOR ENTRY OR JUNIOR LEVEL PEOPLE.
 - `include_similar_titles` (bool) - Expand title search
 - `q_keywords` (str) - General keywords
 - `contact_email_status` (list[str]) - Email verification status
