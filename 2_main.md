@@ -883,7 +883,7 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 **Person filters:**
 - `person_titles` (list[str]) - Job titles
 - `person_locations` (list[str]) - Person locations
-- `person_seniorities` (list[str]) - Seniority levels. NEVER USE THIS FOR ENTRY OR JUNIOR LEVEL PEOPLE.
+- `person_seniorities` (list[str]) - Seniority levels. MUST BE ALL LOWERCASE (e.g. 'entry')
 - `include_similar_titles` (bool) - Expand title search
 - `q_keywords` (str) - General keywords
 - `contact_email_status` (list[str]) - Email verification status
@@ -930,7 +930,6 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 
 **1. For Years of Experience (YOE):**
 - ✅ **USE `person.raw['employment_history']`** - Contains full work history with start/end dates
-- ❌ **DO NOT rely on `person_seniorities` filter alone** - Not accurate for YOE
 - Calculate YOE by parsing dates from `employment_history` list, sum total months, convert to years
 
 **2. For Finding People at Seed Stage Companies:**
