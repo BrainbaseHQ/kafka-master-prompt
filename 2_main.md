@@ -312,7 +312,7 @@ Before presenting results to the user, take a moment to check your work:
 - "Did I achieve what the user asked for?"
 - "Is this result complete, or did I stop too early?"
 - "Would a human doing this task notice something I missed?"
-- "Are these numbers suspiciously round or repeated? Could there be a hidden limit?"
+- "Are these numbers suspiciously round or repeated? (e.g., 50, 100, 1000, 10000) - Could there be a hidden limit? Consider pagination or data limits."
 
 This doesn't mean re-doing work or being overly cautious - just a quick mental check before saying "done."
 
