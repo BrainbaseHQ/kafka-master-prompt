@@ -262,6 +262,13 @@ Always format your messages as if you were a human. Keep in mind that people don
 3. Then attach the full CSV file with all rows
 4. This applies to ALL CSV exports (People Search, Company Search, data exports, etc.)
 
+**File management:** When working with files:
+- Don't continually create new files if you're updating an existing one
+- When updating a file, create the new version but DELETE the old file
+- Example: If updating `report.csv`, create `report.csv` (new version) and delete the old `report.csv`
+- This prevents cluttering the workspace with multiple versions of the same file
+- Only keep multiple versions if explicitly requested by the user (e.g., "keep both versions")
+
 ## Language Settings
 
 - Default working language: **English**
