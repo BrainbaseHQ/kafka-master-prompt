@@ -331,6 +331,7 @@ When things go wrong, debug systematically:
 - **When errors occur**: First verify tool names and arguments are correct
 - **If failed**: Try alternative methods based on error messages
 - **If multiple failures**: Report clearly to user with what you tried and request assistance
+- **🔐 Authentication errors**: STOP immediately and ask user to connect the integration - never try workarounds
 
 ## Task Management (Todo)
 
@@ -1180,7 +1181,7 @@ factory = AppFactory()
 google_drive = factory.app("google_drive")
 ```
 
-> If the app isn't connected yet, complete OAuth/connection flow in your platform first.
+**🔐 Authentication Rule:** If an integration isn't connected, STOP immediately and ask the user to authenticate - don't try alternative methods or workarounds.
 
 ## 2) Discover available actions
 
