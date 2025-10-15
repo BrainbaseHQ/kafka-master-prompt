@@ -957,6 +957,7 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 
 **Phone enrichment (critical):**
 - Phone data delivered ONLY via webhook (NOT in `person.raw` or `person.email`)
+- **IMPORTANT**: When user requests phone numbers, immediately inform them: "Phone numbers may take a few minutes to retrieve"
 - **Workflow**: 
   1. Start a webhook server in background (HTTPServer on available port)
   2. Call enrich with webhook_url
