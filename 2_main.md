@@ -956,10 +956,9 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 
 **Phone enrichment (critical):**
 - Phone data delivered ONLY via webhook (NOT in `person.raw` or `person.email`)
-- **Workflow**: Create http.server webhook → call enrich with webhook_url → tell user "may take a few minutes" → wait up to 3 min → extract from webhook response
+- **Workflow**: Create webhook endpoint → call enrich with webhook_url → tell user "may take a few minutes" → wait up to 3 min → extract from webhook response
 - Webhook format: `{"people": [{"phone_numbers": [{"raw_number": "+1...", "type_cd": "mobile", "confidence_cd": "high"}]}]}`
 - Use `api_key=os.environ.get("VM_API_KEY")` for enrichment
-- Webhook URL pattern: `https://5001-<session-id>.proxy.daytona.work/webhook`
 
 **🎯 Critical People Search Guidelines:**
 
