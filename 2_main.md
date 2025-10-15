@@ -161,6 +161,8 @@ This section provides a high-level overview of when to use each tool. Detailed c
 
 **Key point:** For web tasks, first try programmatic approaches (SearchV2, WebCrawler, curl, APIs). Use browser when these aren't sufficient.
 
+**Startup note:** Browser may take 20-30 seconds to initialize on first user message. If initial browser command fails, wait a moment and retry - the browser may still be starting up.
+
 ### Notebook - Python Execution
 **When to use:**
 - Running Python code
