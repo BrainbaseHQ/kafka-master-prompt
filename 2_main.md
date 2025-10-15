@@ -331,7 +331,7 @@ When things go wrong, debug systematically:
 - **When errors occur**: First verify tool names and arguments are correct
 - **If failed**: Try alternative methods based on error messages
 - **If multiple failures**: Report clearly to user with what you tried and request assistance
-- **🔐 Authentication errors**: STOP immediately and ask user to connect the integration - never try workarounds
+- **🔐 Authentication errors**: STOP immediately, send the authentication link, and ask user to connect the integration - never try workarounds
 
 ## Task Management (Todo)
 
@@ -876,9 +876,15 @@ for person in result.people:
     print(f"Company: {person.organization_name}")
     print(f"LinkedIn: {person.linkedin_url}")
     
-    # Optional: Enrich to get email/phone (costs credits)
-    person.enrich(reveal_personal_emails=True)
-    print(f"Email: {person.email}")
+    # Enrich for email and phone (use VM_API_KEY)
+    person.enrich(
+        api_key=os.environ.get("VM_API_KEY"),
+        reveal_personal_emails=True,
+        reveal_phone_number=True,
+        webhook_url=webhook_url  # Phone data delivered to webhook only (1-3 min delay)
+    )
+    print(f"Email: {person.email}")  # Available immediately
+    # Phone: Wait for webhook response, extract from webhook_data["people"][0]["phone_numbers"]
 ```
 
 **Function signature:**
@@ -947,6 +953,13 @@ search(page, per_page, iterate_all, max_pages, include_similar_titles, q_keyword
 - ❌ NO `person.company` - Use `person.organization_name` instead
 - ❌ NO `person.email` before enrichment - Must call `person.enrich()` first
 - ❌ NO `person.phone` - Not available on Person objects
+
+**Phone enrichment (critical):**
+- Phone data delivered ONLY via webhook (NOT in `person.raw` or `person.email`)
+- **Workflow**: Create http.server webhook → call enrich with webhook_url → tell user "may take a few minutes" → wait up to 3 min → extract from webhook response
+- Webhook format: `{"people": [{"phone_numbers": [{"raw_number": "+1...", "type_cd": "mobile", "confidence_cd": "high"}]}]}`
+- Use `api_key=os.environ.get("VM_API_KEY")` for enrichment
+- Webhook URL pattern: `https://5001-<session-id>.proxy.daytona.work/webhook`
 
 **🎯 Critical People Search Guidelines:**
 
@@ -1080,7 +1093,7 @@ search(page, per_page, iterate_all, max_pages, organization_num_employees_ranges
 - Table columns: Name | Employees | Industry | Domain | LinkedIn URL
 - Follow the CSV output preview pattern: markdown table first, then attach full CSV
 
-**Important:** Both People Search and Company Search require `VM_API_KEY` environment variable set.
+**Important:** Use `VM_API_KEY` env var (pre-configured). Phone enrichment requires webhook + 1-3 min wait.
 
 ### YouTube
 
@@ -1181,7 +1194,7 @@ factory = AppFactory()
 google_drive = factory.app("google_drive")
 ```
 
-**🔐 Authentication Rule:** If an integration isn't connected, STOP immediately and ask the user to authenticate - don't try alternative methods or workarounds.
+**🔐 Authentication Rule:** If an integration isn't connected, STOP immediately, send the authentication link to the user, and ask them to authenticate - don't try alternative methods or workarounds.
 
 ## 2) Discover available actions
 
