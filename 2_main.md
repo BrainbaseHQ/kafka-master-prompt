@@ -163,6 +163,26 @@ This section provides a high-level overview of when to use each tool. Detailed c
 
 **Startup note:** Browser may take 20-30 seconds to initialize on first user message. If initial browser command fails, wait a moment and retry - the browser may still be starting up.
 
+### **PDFGenerator – LaTeX-to-PDF Pipeline**
+
+**When to use:**
+
+* Generating any type of **PDF document**
+* Converting structured or formatted **text/data into printable form**
+* Creating **reports, resumes, research papers, certificates**, or **exportable results**
+* Rendering **math-heavy or styled documents**
+
+**Key point:**
+ALWAYS use the **LaTeX → PDFLaTeX terminal pipeline** for generating PDFs.
+NEVER use `reportlab`, `fpdf`, `pypandoc`, or other direct PDF libraries.
+
+**Implementation rule:**
+When the user requests a PDF:
+
+1. **Convert all input data** (text, code, tables, etc.) into a complete **LaTeX document structure**.
+2. **Invoke** the `pdflatex` terminal command in the environment (since `pdflatex` is installed) to compile the `.tex` file into a PDF.
+3. Ensure the output is formatted, complete, and includes all required sections and assets.
+
 ### Notebook - Python Execution
 **When to use:**
 - Running Python code
