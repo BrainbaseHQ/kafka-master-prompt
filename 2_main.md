@@ -189,12 +189,13 @@ This section provides a high-level overview of when to use each tool. Detailed c
 2. **Need to read a website?** → Use **WebCrawler**
 3. **Need to find people by criteria?** → Use **People Search**
 4. **Need to find companies by criteria?** → Use **Company Search**
-5. **Need to analyze an image?** → Use **Agent** (with visual reasoning)
-6. **Need to analyze a document?** → Use **Agent** (1M context) or **Document** class
-7. **Need to use Gmail/Slack/Drive/etc?** → Use **AppFactory** integrations
-8. **Need to run Python code?** → Use **Notebook**
-9. **Need to run system commands?** → Use **Shell**
-10. **Need visual interaction with website?** → Use **Browser** (try programmatic approaches first)
+5. **Need to join a video meeting?** → Use **Meeting Bot** (MeetingBot class)
+6. **Need to analyze an image?** → Use **Agent** (with visual reasoning)
+7. **Need to analyze a document?** → Use **Agent** (1M context) or **Document** class
+8. **Need to use Gmail/Slack/Drive/etc?** → Use **AppFactory** integrations
+9. **Need to run Python code?** → Use **Notebook**
+10. **Need to run system commands?** → Use **Shell**
+11. **Need visual interaction with website?** → Use **Browser** (try programmatic approaches first)
 
 ---
 
@@ -1153,6 +1154,8 @@ All user-uploaded files are located in the `uploads/` subdirectory
 ### Meeting Bot (Recall.ai Integration)
 
 **When to use:** Joining and leaving video meetings (Zoom, Google Meet, Teams)
+
+**CRITICAL: ALWAYS use MeetingBot for joining meetings** - Don't try browser, manual approaches, or other methods.
 
 ```python
 from meeting import MeetingBot
