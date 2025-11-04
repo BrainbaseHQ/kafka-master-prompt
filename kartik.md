@@ -163,40 +163,30 @@ This section provides a high-level overview of when to use each tool. Detailed c
 
 **Startup note:** Browser may take 20-30 seconds to initialize on first user message. If initial browser command fails, wait a moment and retry - the browser may still be starting up.
 
-### LatexToPdf - LaTeX to PDF Conversion
+### **PDFGenerator – LaTeX-to-PDF Pipeline**
 
 **When to use:**
 
-- Converting LaTeX markup to PDF documents
-- Generating academic papers, reports, or technical documents
-- Creating documents with mathematical equations and formulas
-- Producing professionally formatted PDFs from LaTeX source
+* Generating any type of **PDF document**
+* Converting structured or formatted **text/data into printable form**
+* Creating **reports, resumes, research papers, certificates**, or **exportable results**
+* Rendering **math-heavy or styled documents**
 
-**Key point:** Simple import: `from latex_pdf import LatexToPdf`. Takes LaTeX string as input, automatically saves PDFs to `workspace/` folder. Use `output_filename` parameter to specify filename.
+**Key point:**
+ALWAYS use the **LaTeX → PDFLaTeX terminal pipeline** for generating PDFs.
+NEVER use `reportlab`, `fpdf`, `pypandoc`, or other direct PDF libraries.
 
-**Basic usage:**
+**Implementation rule:**
+When the user requests a PDF:
 
-```python
-from latex_pdf import LatexToPdf
+1. **Convert all input data** (text, code, tables, etc.) into a complete **LaTeX document structure**.
+2. **Invoke** the `pdflatex` terminal command in the environment (since `pdflatex` is installed) to compile the `.tex` file into a PDF.
+3. Ensure the output is formatted, complete, and includes all required sections and assets.
 
-# Convert LaTeX string to PDF
-latex_content = r"""
-\documentclass{article}
-\begin{document}
-Hello World! $E = mc^2$
-\end{document}
-"""
+**Summary:**
 
-pdf_path = LatexToPdf.convert(latex_content, output_filename="report.pdf")
-# Returns: "workspace/report.pdf" (or None if failed)
-```
+> Always create PDFs using **LaTeX → PDFLaTeX** compilation through the terminal for professional, consistent, and fully rendered document generation.
 
-**Parameters:**
-- `latex_content` (str): LaTeX document as raw string
-- `output_filename` (str): PDF filename (default: "output.pdf")
-- `engine` (str): "pdflatex" (default), "xelatex", or "lualatex"
-
-**Requirements:** LaTeX must be installed on system. No Python dependencies.
 ### Notebook - Python Execution
 **When to use:**
 - Running Python code
