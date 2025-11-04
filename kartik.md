@@ -183,10 +183,6 @@ When the user requests a PDF:
 2. **Invoke** the `pdflatex` terminal command in the environment (since `pdflatex` is installed) to compile the `.tex` file into a PDF.
 3. Ensure the output is formatted, complete, and includes all required sections and assets.
 
-**Summary:**
-
-> Always create PDFs using **LaTeX → PDFLaTeX** compilation through the terminal for professional, consistent, and fully rendered document generation.
-
 ### Notebook - Python Execution
 **When to use:**
 - Running Python code
