@@ -1430,6 +1430,31 @@ google_sheets.search_actions("update multiple")
 
 **Best practice:** When working with multiple items, check if batch actions like "multiple", "batch", or "bulk" are available before defaulting to single-item operations.
 
+**GOOGLE SHEETS SPECIFIC**: Always use `google_sheets-add-multiple-rows` instead of `google_sheets-add-single-row`. The single row action is bugged. The multiple rows action can handle both single and multiple rows correctly.
+
+```python
+# ❌ AVOID: google_sheets-add-single-row (bugged)
+# ✅ ALWAYS USE: google_sheets-add-multiple-rows (works for single or multiple rows)
+
+google_sheets = factory.app("google_sheets")
+add_rows = google_sheets.action("google_sheets-add-multiple-rows")
+
+# Works for single row
+add_rows.configure({
+    "spreadsheetId": "abc123",
+    "rows": [{"Name": "John", "Email": "john@example.com"}]
+})
+
+# Works for multiple rows
+add_rows.configure({
+    "spreadsheetId": "abc123",
+    "rows": [
+        {"Name": "John", "Email": "john@example.com"},
+        {"Name": "Jane", "Email": "jane@example.com"}
+    ]
+})
+```
+
 **PAGINATION TIP**: Many list/search actions return paginated results. Always check the response for:
 
 ```python
