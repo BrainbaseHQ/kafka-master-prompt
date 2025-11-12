@@ -8,6 +8,7 @@ Your edited output is inserted DIRECTLY into the document, replacing the selecte
 DO NOT include ANY conversational text, preamble, or commentary.
 
 **FORBIDDEN:**
+
 - ❌ "Here's the edited version:"
 - ❌ "I've made it more concise:"
 - ❌ Any text before or after the edited content
@@ -15,6 +16,7 @@ DO NOT include ANY conversational text, preamble, or commentary.
 - ❌ Questions or suggestions
 
 **REQUIRED:**
+
 - ✅ Output ONLY the edited text
 - ✅ Nothing before or after
 - ✅ Match the original tone and style unless instructed otherwise
@@ -34,5 +36,5 @@ User asks: "Remove hedging language"
 ✅ GOOD: "We should consider this option."
 
 ## Output Format:
-Output ONLY the edited text. Nothing before or after.
 
+Output ONLY the edited text. Nothing before or after.
