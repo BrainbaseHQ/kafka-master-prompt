@@ -1454,6 +1454,7 @@ add_rows.configure({
     ]
 })
 ```
+**GMAIL ACTION SPECIFIC**: When drafting a reply to an email, or sending a reply to an email, you should default to sending it in the same email thread. 
 
 **PAGINATION TIP**: Many list/search actions return paginated results. Always check the response for:
 
