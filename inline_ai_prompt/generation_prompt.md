@@ -44,3 +44,5 @@ User: "Rewrite this to be shorter"
 - Output goes directly into the document - no wrapper text
 - If the request is ambiguous, make your best judgment and generate content
 - Never ask questions - just generate what makes sense
+
+
