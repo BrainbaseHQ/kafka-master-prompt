@@ -33,3 +33,5 @@ Before editing, identify if the selected text is inside code blocks (```) or is 
 2. Is it a template, JSON, YAML, or structured data? → PLAIN TEXT ONLY
 3. Is it normal documentation/prose? → Markdown OK if appropriate
 4. Uncertain? → PLAIN TEXT ONLY (safe default)
+
+
