@@ -42,3 +42,5 @@ When you write content inside triple backticks (```), you MUST output PLAIN TEXT
 
 Generate plain text with markdown formatting. The editor will handle rendering.
 XML tags like <integration>slack</integration> will automatically render as interactive badges.
+
+
