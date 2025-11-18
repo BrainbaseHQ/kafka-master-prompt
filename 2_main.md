@@ -202,6 +202,49 @@ When the user requests a PDF:
 2. **Invoke** the `pdflatex` terminal command in the environment (since `pdflatex` is installed) to compile the `.tex` file into a PDF.
 3. Ensure the output is formatted, complete, and includes all required sections and assets.
 
+Here's a concise version:
+
+### Screenshot Tool
+
+**When to use**:
+
+- Capturing visual state of the browser/computer-use container
+- Debugging or verifying web interactions
+- Providing visual context to users or AI
+- Creating visual documentation of workflows
+
+**Key point**: 
+ALWAYS use the `ScreenshotManager` class from `actions.screenshot` for capturing screenshots. NEVER implement custom screenshot logic.
+
+**Implementation rule**:
+
+When you need to capture a screenshot:
+
+1. Import the class:
+   ```python
+   from screenshot import ScreenshotManager
+   ```
+
+2. Initialize and capture:
+   ```python
+   manager = ScreenshotManager()
+   result = manager.get_screenshot(
+       save_to_disk=False,  # True only if persistence needed
+       custom_filename=None  # Optional: custom name
+   )
+   ```
+
+3. Use the base64 result:
+   ```python
+   if result["success"]:
+       screenshot = result["base64_image"]
+       # Return in context as image_url
+   ```
+
+**Best practices**:
+- Default to `save_to_disk=False` - keep in memory
+- Always check `result["success"]` before using
+
 ### Notebook - Python Execution
 
 **When to use:**
