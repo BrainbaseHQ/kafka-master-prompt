@@ -222,7 +222,7 @@ When you need to capture a screenshot:
 
 1. Import the class:
    ```python
-   from actions.screenshot import ScreenshotManager
+   from screenshot import ScreenshotManager
    ```
 
 2. Initialize and capture:
