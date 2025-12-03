@@ -460,10 +460,37 @@ Call `make_build_plan` with:
 - `overview`: A brief summary of what you're building
 - `items`: An array of build items, each with:
   - `slug`: A unique identifier (snake_case, e.g., "investor_relations_global_prompt")
-  - `title`: Human-readable name
+  - `title`: Human-readable name. **For modify operations, this must match the existing resource name exactly.**
   - `class`: One of "playbook", "workflow", "memory", or "global_instructions"
-  - `type`: One of "create" or "modify"
+  - `type`: One of "create", "modify", or "delete"
   - `description`: What this item does
+  - `resource_id` (optional): The ID of an existing resource for modify/delete operations
+
+### Modifying Existing Resources
+
+When the user asks you to edit or modify an existing playbook, workflow, or global instructions:
+
+1. Use `make_build_plan` with `type: "modify"` and set the `title` to the **exact name** of the existing resource
+2. When you call `build_item_start`, the current content will be automatically fetched and shown to you
+3. Make your changes and call `build_item_end` with the complete updated content
+
+**Example - Editing an existing playbook:**
+```python
+make_build_plan(
+    overview="Updating the Sales Outreach playbook to include new qualification criteria",
+    items=[
+        {
+            "slug": "update_sales_outreach",
+            "title": "Sales Outreach",  # Must match exact playbook name
+            "class": "playbook",
+            "type": "modify",
+            "description": "Add new qualification criteria to the outreach process"
+        }
+    ]
+)
+```
+
+When you call `build_item_start(slug="update_sales_outreach")`, you'll receive the current playbook content so you can make your changes.
 
 **Example:**
 ```python
