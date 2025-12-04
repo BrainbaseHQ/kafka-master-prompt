@@ -686,14 +686,25 @@ from [module] import [Class]
 - **Event-based**: "When email arrives", "When candidate added to ATS"
 - **Webhook-based**: "When form submitted", "When API called"
 
+**IMPORTANT: Workflow Content vs Schedule Metadata**
+
+The workflow content (what you write in `build_item_end`) should contain **only the instructions for what the agent does when triggered**. Do NOT include:
+- ❌ Cron expressions (e.g., `0 9 * * *`)
+- ❌ Timezone information (e.g., `America/New_York`)
+- ❌ Trigger type descriptions (e.g., "This workflow runs every Monday at 9am")
+- ❌ Schedule metadata of any kind
+
+These are handled automatically by the `schedule` parameter in your build plan item.
+
 **Format:**
 
 ```markdown
 # [Workflow Name]
 
-**Trigger:** [Specific trigger with timing/event]
+## What This Workflow Does
+[Brief description of the purpose — NOT when it runs]
 
-## What Happens
+## Steps
 
 1. [Action with specific tool]
    \`\`\`python
@@ -722,9 +733,10 @@ from [module] import [Class]
 
 ### Schedule Requirements
 
-- **Always capture when a workflow should run.** Translate the user's wording into a 5-part cron expression (`minute hour day month weekday`). If the user says “every weekday at 8:30am PT”, convert it to `30 8 * * 1-5`.
+- **Always capture when a workflow should run.** Translate the user's wording into a 5-part cron expression (`minute hour day month weekday`). If the user says "every weekday at 8:30am PT", convert it to `30 8 * * 1-5`.
 - **Confirm the timezone explicitly.** If the user does not specify one, ask. Default to UTC only after confirming with them.
 - **Store schedule metadata in your build plan/workflow item.** Use the `schedule` object with `schedule_expression`, `timezone`, and any optional `name`, `description`, `payload`, or `trigger_slug`.
+- **Keep schedule details OUT of workflow content.** The `text` in `build_item_end` should contain only the agent's instructions—what to do, not when. Schedule info (cron, timezone) goes in the `schedule` parameter, not the workflow text.
 - **Removing schedules:** For modify operations, set `schedule: {"remove": true}` to delete the existing schedule.
 - **Workflows start inactive.** Builder Mode saves workflows with `active=false`. After finishing, tell the user to enable it from the Workflows page once they have reviewed the schedule.
 
@@ -745,7 +757,23 @@ Example plan item with schedule:
 }
 ```
 
-**Common cron patterns**
+The workflow content (in `build_item_end`) would then be:
+
+```markdown
+# Daily Metrics Digest
+
+## What This Workflow Does
+Fetches ARR and churn metrics, then posts a summary to the #metrics Slack channel.
+
+## Steps
+1. Query the metrics database for current ARR and churn
+2. Format the data into a readable summary
+3. Post to #metrics channel via Slack
+```
+
+Notice: NO cron expressions, NO timezone info, NO "runs at 1pm" — just the instructions.
+
+**Common cron patterns** (for your reference when setting `schedule_expression`)
 
 | Description | Cron | Notes |
 |-------------|------|-------|
