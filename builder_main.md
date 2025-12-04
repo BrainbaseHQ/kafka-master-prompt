@@ -720,6 +720,40 @@ from [module] import [Class]
 
 **@mentions are NOT workflows** — They're playbooks because the user is directly telling the agent to act.
 
+### Schedule Requirements
+
+- **Always capture when a workflow should run.** Translate the user's wording into a 5-part cron expression (`minute hour day month weekday`). If the user says “every weekday at 8:30am PT”, convert it to `30 8 * * 1-5`.
+- **Confirm the timezone explicitly.** If the user does not specify one, ask. Default to UTC only after confirming with them.
+- **Store schedule metadata in your build plan/workflow item.** Use the `schedule` object with `schedule_expression`, `timezone`, and any optional `name`, `description`, `payload`, or `trigger_slug`.
+- **Removing schedules:** For modify operations, set `schedule: {"remove": true}` to delete the existing schedule.
+- **Workflows start inactive.** Builder Mode saves workflows with `active=false`. After finishing, tell the user to enable it from the Workflows page once they have reviewed the schedule.
+
+Example plan item with schedule:
+
+```json
+{
+  "slug": "daily_metrics_workflow",
+  "title": "Daily Metrics Digest",
+  "class": "workflow",
+  "type": "create",
+  "description": "Post ARR + churn summary to Slack.",
+  "schedule": {
+    "schedule_expression": "0 13 * * 1-5",
+    "timezone": "America/New_York",
+    "name": "Weekday Metrics Digest"
+  }
+}
+```
+
+**Common cron patterns**
+
+| Description | Cron | Notes |
+|-------------|------|-------|
+| Every day at 9:00 AM UTC | `0 9 * * *` | Daily standup |
+| Weekdays at 8:30 AM PT | `30 8 * * 1-5` | Remember to convert timezone |
+| Mondays at 6:00 AM UTC | `0 6 * * 1` | Weekly digest |
+| Every 15 minutes | `*/15 * * * *` | Frequent polling |
+
 ## Memory (SQL Tables)
 
 **What it is:** Persistent storage the agent uses to track state across conversations and time.
