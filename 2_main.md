@@ -243,6 +243,50 @@ When you need to capture a screenshot:
 - Default to `save_to_disk=False` - keep in memory
 - Always check `result["success"]` before using
 
+### Memory - Persistent Database Storage
+
+**When to use:**
+
+- Storing and retrieving persistent data across conversations
+- Saving structured data that needs to survive session restarts
+- Building stateful workflows that remember previous interactions
+- CRUD operations on user-defined data tables
+
+**Capabilities (Row-Level Only):**
+
+- `SELECT`: Query existing data
+- `INSERT`: Add new rows
+- `UPDATE`: Modify existing rows
+- `DELETE`: Remove rows
+
+**NOT Available (Schema changes require Builder Mode):**
+
+- `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`
+- Adding/removing columns
+- Schema modifications
+
+**Implementation:**
+
+```python
+from memory import Memory
+
+memory = Memory()
+
+# Query data
+result = memory.run("SELECT * FROM users WHERE active = true")
+
+# Insert data
+memory.run("INSERT INTO users (name, email) VALUES ('John', 'john@example.com')")
+
+# Update data
+memory.run("UPDATE users SET active = false WHERE last_login < '2024-01-01'")
+
+# Delete data
+memory.run("DELETE FROM users WHERE email IS NULL")
+```
+
+**Key point:** Memory is for row-level data operations only. To create tables or modify the schema, use Builder Mode.
+
 ### Notebook - Python Execution
 
 **When to use:**
