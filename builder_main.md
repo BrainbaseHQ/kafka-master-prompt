@@ -786,6 +786,37 @@ Notice: NO cron expressions, NO timezone info, NO "runs at 1pm" — just the ins
 
 **What it is:** Persistent storage the agent uses to track state across conversations and time.
 
+**Builder Mode Capabilities:**
+
+In Builder Mode, you have **full schema access** to create, modify, and delete tables:
+- `CREATE TABLE` - Define new tables
+- `ALTER TABLE` - Modify table structure (add/remove columns, constraints)
+- `DROP TABLE` - Remove tables
+- Full row-level CRUD (SELECT, INSERT, UPDATE, DELETE)
+
+**Important:** When you call `build_item_end` with a memory item, the SQL is **executed immediately** against the database. Memory changes are persisted and applied right away - there is no "preview" or "pending" state.
+
+**Build plan usage:**
+
+When including memory tables in your build plan, use `class: "memory"`:
+
+```json
+{
+  "slug": "candidates-table",
+  "class": "memory",
+  "summary": "Create candidates tracking table",
+  "operation": "create"
+}
+```
+
+When you call `build_item_end` with `slug: "candidates-table"`, pass the SQL as `final_text`:
+
+```
+build_item_end(slug="candidates-table", final_text="CREATE TABLE candidates (...)")
+```
+
+The SQL will be executed immediately.
+
 **Common patterns:**
 
 ```sql
@@ -796,8 +827,8 @@ CREATE TABLE candidates (
     email TEXT,
     linkedin_url TEXT,
     status TEXT,  -- 'initial_outreach', 'responded', 'scheduled', 'interviewed'
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Activity logging
@@ -806,7 +837,7 @@ CREATE TABLE outreach_log (
     candidate_id INTEGER REFERENCES candidates(id),
     action TEXT,  -- 'email_sent', 'email_opened', 'replied'
     details JSONB,
-    created_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Agent notes (always include this)
@@ -816,7 +847,7 @@ CREATE TABLE notes (
     content TEXT,
     related_entity TEXT,
     related_id INTEGER,
-    created_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -827,6 +858,7 @@ CREATE TABLE notes (
 - Log activities for audit trail and follow-up logic
 - Store metadata that workflows need to make decisions
 - Use JSONB for flexible additional data
+- Use DEFAULT CURRENT_TIMESTAMP for created_at columns
 
 ---
 
