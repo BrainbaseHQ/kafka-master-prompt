@@ -1781,9 +1781,85 @@ else:
 - Prefer using `app.search_actions(query)` to discover likely slugs
 - If no matching slug exists, DO NOT invent one. Use the proxy instead
 
+## 6) File Uploads (Multipart/Form-Data)
+
+Some APIs require file uploads using `multipart/form-data` (e.g., ClickUp attachments, Slack file uploads). The standard `custom_request()` method only supports JSON bodies, so use these dedicated upload methods instead:
+
+### Upload Methods
+
+```python
+from integrations import AppFactory
+
+factory = AppFactory()
+
+# 1. Upload a local file from /workspace
+result = factory.proxy_upload_file(
+    app_slug="clickup",
+    url="https://api.clickup.com/api/v2/task/abc123/attachment",
+    file_path="/workspace/report.pdf",
+    file_field_name="attachment"  # The form field name the API expects
+)
+
+# 2. Upload a file from a URL (proxy fetches and uploads it)
+result = factory.proxy_upload_from_url(
+    app_slug="clickup",
+    url="https://api.clickup.com/api/v2/task/abc123/attachment",
+    file_url="https://example.com/document.pdf",
+    file_field_name="attachment",
+    file_name="document.pdf"  # Optional: override the filename
+)
+
+# 3. Upload in-memory bytes (e.g., generated PDF, processed image)
+pdf_bytes = generate_pdf_report()  # Returns bytes
+result = factory.proxy_upload_bytes(
+    app_slug="clickup",
+    url="https://api.clickup.com/api/v2/task/abc123/attachment",
+    file_bytes=pdf_bytes,
+    file_name="generated_report.pdf",
+    file_field_name="attachment",
+    file_content_type="application/pdf"  # Optional: MIME type
+)
+```
+
+### Parameters
+
+All upload methods support these optional parameters:
+- `file_content_type`: MIME type (auto-detected from filename if not provided)
+- `form_fields`: Additional form fields as `Dict[str, str]`
+- `headers`: Additional headers as `Dict[str, str]`
+- `method`: HTTP method, default "POST"
+- `account_id`: Explicit OAuth account ID (auto-resolved if not provided)
+
+### Common Use Cases
+
+**ClickUp task attachments:**
+```python
+result = factory.proxy_upload_file(
+    app_slug="clickup",
+    url=f"https://api.clickup.com/api/v2/task/{task_id}/attachment",
+    file_path="/workspace/screenshot.png",
+    file_field_name="attachment"
+)
+```
+
+**Slack file uploads:**
+```python
+result = factory.proxy_upload_file(
+    app_slug="slack",
+    url="https://slack.com/api/files.upload",
+    file_path="/workspace/data.csv",
+    file_field_name="file",
+    form_fields={"channels": "C123456", "title": "Data Export"}
+)
+```
+
+### Limits
+- Maximum file size: **25MB**
+- Supported for any API that accepts `multipart/form-data`
+
 ## FAQs & Tips
 
-- **I have to upload a file, how do I do it?** You can't pass files in bytes or with local paths, you must pass a remote public url to any prop that wants a file
+- **I have to upload a file, how do I do it?** Use `factory.proxy_upload_file()` for local files, `factory.proxy_upload_from_url()` for URL-based files, or `factory.proxy_upload_bytes()` for in-memory data. See the "File Uploads" section above.
 - **Do I have to configure everything at once?** No—call `configure(...)` multiple times; later calls override earlier ones
 - **How do I know required vs optional props?** Print the action. Look for ❌ (required) vs ✅ (optional)
 - **When should I use `get_options_for_prop`?** Use it when you need to discover what values are available. If you already know the exact ID/value, skip it and configure directly
