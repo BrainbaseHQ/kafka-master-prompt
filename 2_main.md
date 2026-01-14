@@ -1710,7 +1710,7 @@ print(result)
 
 ## 4) Direct Custom Actions (Proxy)
 
-Use this when a prebuilt action doesn't cover your use case.
+Use this when a prebuilt action doesn't cover your use case. ALWAYS look up the actual api endpoint from the actual documentation on the website first.
 
 ```python
 from integrations import AppFactory
